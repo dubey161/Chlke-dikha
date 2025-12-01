@@ -1,3 +1,5 @@
+package GenericWildCard;
+
 import java.util.List;
 
 class Util {

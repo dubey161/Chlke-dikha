@@ -1,3 +1,5 @@
+package GenericWildCard;
+
 class Box<T> {
     private T value;
 

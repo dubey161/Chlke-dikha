@@ -1,3 +1,5 @@
+package GenericWildCard;
+
 class NumericBox<T extends Number> {
     private T number;
 
