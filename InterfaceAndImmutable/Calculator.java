@@ -1,27 +1,23 @@
 package InterfaceAndImmutable;
 
+@FunctionalInterface
 public interface Calculator {
 
-    // Abstract method
-    int add(int a, int b);
+    int add(int a, int b);   // ONLY abstract method → Lambda allowed
 
-    // Default method
     default int multiplyByTwo(int a) {
-        return multiply(a, 2); // Calls private helper
+        return multiply(a, 2); 
     }
 
-    // Private instance method (Java 9+)
     private int multiply(int a, int b) {
         return a * b;
     }
 
-    // Private static method (Java 9+)
-    private static int square(int a) {
-        return a * a;
-    }
-
-    // Public static method using private static method
     static int squareOfSum(int a, int b) {
         return square(a + b);
+    }
+
+    private static int square(int a) {
+        return a * a;
     }
 }
