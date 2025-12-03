@@ -1,4 +1,4 @@
-package demo;
+package Reflection;
 
 public class ReflectionAccessDemo {
 
@@ -17,12 +17,14 @@ public class ReflectionAccessDemo {
         System.out.println("2) Using obj.getClass()  → " + c2.getName());
 
         // 3️⃣ Get class using Class.forName()
-        Class<?> c3 = Class.forName("demo.ReflectionBasic");
+        Class<?> c3 = Class.forName("Reflection.ReflectionBasic");
+        Class  c48 = Class.forName("Reflection.ReflectionBasic");
         System.out.println("3) Using Class.forName   → " + c3.getName());
+        System.out.println("3) Using Class.forName hjujjn  → " + c48.getName());
 
         // 4️⃣ Get class using ClassLoader.loadClass()
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        Class<?> c4 = cl.loadClass("demo.ReflectionBasic");
+        Class<?> c4 = cl.loadClass("Reflection.ReflectionBasic");
         System.out.println("4) Using ClassLoader     → " + c4.getName());
     }
 }
