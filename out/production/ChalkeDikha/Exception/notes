@@ -1,0 +1,257 @@
+1. What is an Exception?
+
+An exception is an unwanted event that occurs during program execution, stopping the normal flow.
+
+Example: division by zero, array index out of bounds, null pointer, file not found.
+
+
+LIST OF ALL
+📌 CHECKED (COMPILE-TIME) EXCEPTIONS — FULL LIST (MOST COMMON)
+
+Compiler forces handling.
+
+✔ From java.io
+
+IOException
+
+FileNotFoundException
+
+EOFException
+
+InterruptedIOException
+
+SyncFailedException
+
+✔ From java.sql
+
+SQLException
+
+✔ From java.lang
+
+ClassNotFoundException
+
+CloneNotSupportedException
+
+InstantiationException
+
+IllegalAccessException
+
+NoSuchMethodException
+
+✔ From java.text
+
+ParseException
+
+✔ From threads
+
+InterruptedException
+
+✔ From reflection
+
+InvocationTargetException
+
+✔ Others often seen
+
+TimeoutException
+
+JAXBException
+
+ParserConfigurationException
+
+TransformerException
+
+MalformedURLException
+
+URISyntaxException
+
+👉 Rule: All checked exceptions extend Exception but NOT RuntimeException.
+
+✅ 5. LIST OF ALL RUNTIME (UNCHECKED) EXCEPTIONS — FULL LIST (IMPORTANT)
+
+Compiler does NOT force handling.
+
+✔ Arithmetic problems
+
+ArithmeticException
+
+✔ Null issues
+
+NullPointerException
+
+✔ Array problems
+
+ArrayIndexOutOfBoundsException
+
+NegativeArraySizeException
+
+✔ Illegal arguments
+
+IllegalArgumentException
+
+NumberFormatException
+
+✔ Illegal operations
+
+IllegalStateException
+
+UnsupportedOperationException
+
+✔ Casting
+
+ClassCastException
+
+✔ Collections / iterators
+
+IndexOutOfBoundsException
+
+ConcurrentModificationException
+
+NoSuchElementException
+
+✔ Security
+
+SecurityException
+
+✔ Reflection / access
+
+IllegalAccessError
+
+👉 All runtime exceptions extend RuntimeException.
+
+🚨 6. Errors (not exceptions, but runtime)
+
+StackOverflowError
+
+OutOfMemoryError
+
+VirtualMachineError
+
+AssertionError
+
+These cannot be handled normally.
+
+
+. Exception Keywords
+
+    try	        Block containing risky code
+    catch	    Handles the exception
+    finally	    Always executes
+    throw	    Throw an exception explicitly
+    throws	    Used in method signature to declare checked exceptions
+    rethrow	    Throw the same exception again
+
+
+
+CASE 1: int x = 0; (String) x
+❌ This does NOT compile at all.
+
+Because primitive types (int, boolean, char, etc.) cannot be cast to reference types (String, Object, etc.).
+
+✔ Type of error → Compile-time error (NOT an exception)
+
+Exact error message (similar to):
+
+inconvertible types: int cannot be converted to String
+
+
+⚠️ Since the program never runs, no exception occurs, only a compile-time TYPE error.
+
+
+CASE 2: Object x = 0; (String) x
+This compiles because:
+
+0 autoboxes to Integer
+
+So Object x = 0; → Object x = new Integer(0);
+
+Compiler thinks: maybe this can be a String, so it allows the cast.
+
+BUT at runtime, Integer cannot be cast to String.
+✔ Type of error → Runtime Exception
+⚡ ClassCastException
+
+Exact exception:
+
+java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.String
+
+
+There Are TWO Meanings of the Word “Error” in Java
+1️⃣ “Error” (as in syntax/type error) → Compile-time error
+
+This is the general English meaning of the word “error”.
+
+Examples:
+
+Type mismatch
+
+Syntax mistakes
+
+Missing semicolon
+
+Inconvertible types
+
+These are NOT Java Error objects.
+They are compiler faults, not part of Java’s exception hierarchy.
+
+Example:
+int x = 0;
+(String) x;
+
+
+Compiler says:
+
+inconvertible types: int cannot be converted to String
+
+
+This is a compile-time error, NOT:
+
+not an exception
+
+not a runtime error
+
+not a java.lang.Error
+
+Just a compiler rejection.
+
+🚨 2️⃣ Java “Errors” (java.lang.Error) → Runtime problems
+
+These are actual Java classes and occur only at runtime.
+
+Examples:
+
+OutOfMemoryError
+
+StackOverflowError
+
+AssertionError
+
+VirtualMachineError
+
+These belong to this hierarchy:
+
+Throwable
+ ├── Exception
+ └── Error   ← runtime only
+
+
+So Java “Error” (the class) always means runtime problems.
+
+| Type                                  | When?          | Meaning                        | Example                |
+| ------------------------------------- | -------------- | ------------------------------ | ---------------------- |
+| **compile-time error**                | BEFORE running | Code invalid; compiler rejects | `(String) int`         |
+| **runtime exception**                 | DURING running | Program threw exception        | `NullPointerException` |
+| **runtime error (`java.lang.Error`)** | DURING running | JVM-level failure              | `OutOfMemoryError`     |
+
+
+1. int x = 0; (String) x; → what type?
+
+👉 Compile-time error (not an exception, not java.lang.Error)
+
+2. Why is this not a runtime Error?
+
+Because JVM never runs this code — the compiler blocks it.
+
+3. Are Java Errors always runtime?
+
+👉 YES — only java.lang.Error and its subclasses occur at runtime.
+Compiler errors are not Java Errors.
