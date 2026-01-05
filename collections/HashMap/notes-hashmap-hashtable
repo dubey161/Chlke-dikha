@@ -1,0 +1,333 @@
+# Java Map & HashMap – Complete Notes (Interview + Internals)
+
+---
+
+## 1️⃣ Why `Map` is **NOT** part of `Collection`
+
+```
+Collection  → works with single values
+Map         → works with key–value pairs
+```
+
+* `List`, `Set`, `Queue` → store **values only**
+* `Map` → stores **key → value mapping**
+* Hence Map needs **different APIs** (`put`, `get`, `entrySet`) and is **not a child of Collection**
+
+---
+
+## 2️⃣ Map Basics
+
+```java
+Map<Integer, String> map = new HashMap<>();
+```
+
+### Properties
+
+* Keys ❌ cannot be duplicate
+* Values ✅ can be duplicate
+* Duplicate key → **value overwritten**
+
+```java
+map.put(1, "A");
+map.put(1, "B"); // overwrites A
+```
+
+---
+
+## 3️⃣ Map Implementations
+
+```
+Map (interface)
+ ├── HashMap
+ ├── LinkedHashMap
+ ├── TreeMap
+ ├── Hashtable (legacy)
+ └── ConcurrentHashMap
+```
+
+---
+
+## 4️⃣ Important Map Methods
+
+```java
+map.size();
+map.isEmpty();
+map.containsKey(key);
+map.get(key);
+map.put(key, value);
+map.putIfAbsent(key, value);
+map.remove(key);
+map.getOrDefault(key, defaultValue);
+map.keySet();
+map.values();
+map.entrySet();
+```
+
+---
+
+## 5️⃣ HashMap Internals (VERY IMPORTANT)
+
+### Internal Data Structure
+
+```
+HashMap
+ └── Node<K,V>[] table   // array
+
+Node {
+  int hash;
+  K key;
+  V value;
+  Node next;
+}
+```
+
+So internally:
+
+```
+index 0 → Node → Node → Node
+index 1 → null
+index 2 → Node
+```
+
+---
+
+## 6️⃣ Default Values
+
+| Property         | Value                        |
+| ---------------- | ---------------------------- |
+| Initial capacity | 16                           |
+| Load factor      | 0.75                         |
+| Resize condition | size > capacity × loadFactor |
+
+---
+
+## 7️⃣ How `put()` Works (Step-by-Step)
+
+```java
+map.put(10, "A");
+```
+
+### Steps:
+
+1. `hash = hash(key)`
+2. `index = hash % table.length`
+3. If bucket empty → insert
+4. If bucket occupied:
+
+   * same key → overwrite
+   * different key → **collision** → chaining
+
+### Collision Handling
+
+```
+index 1 → (1,A) → (10,B) → (5,C)
+```
+
+This is **linked list chaining**.
+
+---
+
+## 8️⃣ How `get()` Works
+
+```java
+map.get(5);
+```
+
+1. Compute hash of key
+2. Find index
+3. Traverse linked list / tree
+4. Use `equals()` to compare keys
+
+---
+
+## 9️⃣ hashCode() & equals() Contract ⭐
+
+### Rule 1
+
+```
+if obj1.equals(obj2) → obj1.hashCode() == obj2.hashCode()
+```
+
+### Rule 2
+
+```
+if hashCodes same → objects MAY or MAY NOT be equal
+```
+
+Why important?
+
+* Hash → find bucket
+* equals → find exact key
+
+---
+
+## 🔟 Load Factor & Rehashing
+
+### Example
+
+```
+capacity = 16
+loadFactor = 0.75
+threshold = 12
+```
+
+* When 13th entry inserted → **rehash**
+* Capacity doubles → 32
+* All keys rehashed
+
+Purpose:
+
+* Reduce collisions
+* Maintain O(1) average time
+
+---
+
+## 1️⃣1️⃣ Treeification (Java 8+)
+
+If collisions increase too much:
+
+| Condition       | Action         |
+| --------------- | -------------- |
+| bucket size < 8 | LinkedList     |
+| bucket size ≥ 8 | Red-Black Tree |
+
+Result:
+
+```
+Worst case = O(log N)
+```
+
+---
+
+## 1️⃣2️⃣ Time Complexity
+
+| Operation | Average | Worst    |
+| --------- | ------- | -------- |
+| put       | O(1)    | O(log N) |
+| get       | O(1)    | O(log N) |
+| remove    | O(1)    | O(log N) |
+
+---
+
+## 1️⃣3️⃣ Null Handling
+
+```java
+HashMap<String, String> map = new HashMap<>();
+map.put(null, "A");
+map.put("B", null);
+```
+
+✔ HashMap allows **one null key**
+✔ Multiple null values
+
+❌ Hashtable / ConcurrentHashMap → NO nulls
+
+---
+
+## 1️⃣4️⃣ putIfAbsent Example
+
+```java
+map.put(1, null);
+map.putIfAbsent(1, "A"); // replaces null
+map.putIfAbsent(1, "B"); // ignored
+```
+
+---
+
+## 1️⃣5️⃣ Iterating HashMap
+
+### entrySet (BEST)
+
+```java
+for (Map.Entry<Integer, String> e : map.entrySet()) {
+    System.out.println(e.getKey() + "=" + e.getValue());
+}
+```
+
+### keySet
+
+```java
+for (Integer k : map.keySet()) {
+    System.out.println(k);
+}
+```
+
+### values
+
+```java
+for (String v : map.values()) {
+    System.out.println(v);
+}
+```
+
+---
+
+## 1️⃣6️⃣ Thread Safety Comparison
+
+| Map               | Thread Safe | Nulls |
+| ----------------- | ----------- | ----- |
+| HashMap           | ❌           | ✔     |
+| Hashtable         | ✔           | ❌     |
+| ConcurrentHashMap | ✔           | ❌     |
+
+---
+
+## 1️⃣7️⃣ HashMap vs ConcurrentHashMap
+
+| Feature     | HashMap       | ConcurrentHashMap |
+| ----------- | ------------- | ----------------- |
+| Thread safe | ❌             | ✔                 |
+| Locking     | None          | Bucket-level      |
+| Performance | Fast (single) | Fast (multi)      |
+| Iterator    | Fail-fast     | Weakly consistent |
+
+---
+
+## 1️⃣8️⃣ Relation with Set ⭐
+
+```
+HashSet       → uses HashMap
+LinkedHashSet → uses LinkedHashMap
+TreeSet      → uses TreeMap
+```
+
+```java
+HashSet<E> internally = new HashMap<E, Object>();
+```
+
+Set stores elements as **keys**, dummy object as value.
+
+---
+
+## 1️⃣9️⃣ Interview One-Liners
+
+* HashMap average complexity → **O(1)**
+* Worst case → **O(log N)** (Java 8+)
+* Load factor controls resizing
+* Treeification prevents long chains
+* HashMap not thread-safe
+
+---
+
+## 2️⃣0️⃣ MUST PRACTICE
+
+* Override `hashCode()` & `equals()`
+* Collision examples
+* Resize scenario
+* ConcurrentHashMap usage
+
+---
+| Feature     | HashMap | Hashtable | ConcurrentHashMap |
+| ----------- | ------- | --------- | ----------------- |
+| Thread-safe | ❌       | ✅         | ✅                 |
+| Null key    | ✅ (1)   | ❌         | ❌                 |
+| Null value  | ✅       | ❌         | ❌                 |
+| Performance | ⭐⭐⭐     | ⭐         | ⭐⭐⭐⭐              |
+| Locking     | None    | Full      | Segment/Bucket    |
+| Legacy      | ❌       | ✅         | ❌                 |
+| Recommended | ✅       | ❌         | ✅                 |
+
+
+
+
+
