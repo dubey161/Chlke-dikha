@@ -1,0 +1,217 @@
+
+    Iterable
+       ↑
+    Collection
+       ↑
+     ┌───────────────┬───────────────────┬─────────────────────────┐
+     |               |                   |                         |
+    List          Queue               Set                     Map (separate)
+     |               |                   |                         |
+     |               |                   |                         |
+    ArrayList       Deque            HashSet                 HashMap
+    LinkedList       ↑                LinkedHashSet           LinkedHashMap
+    Vector           |                TreeSet                 TreeMap
+    Stack        LinkedList           CopyOnWriteArraySet     ConcurrentHashMap
+                  ArrayDeque
+               PriorityQueue
+
+
+
+    Map   (separate)
+     |
+    HashMap        ✔
+    LinkedHashMap  ✔
+    TreeMap        ✔
+
+
+
+    ⭐ 1. Iterable reference
+    Iterable i = new ArrayList();      ✔
+    Iterable i = new LinkedList();     ✔
+    Iterable i = new HashSet();        ✔
+    Iterable i = new TreeSet();        ✔
+    Iterable i = new ArrayDeque();     ✔
+    Iterable i = new PriorityQueue();  ✔
+    Iterable i = new Stack();          ✔
+
+    ⭐ 2. Collection reference
+    Collection c = new ArrayList();      ✔
+    Collection c = new LinkedList();     ✔
+    Collection c = new HashSet();        ✔
+    Collection c = new TreeSet();        ✔
+    Collection c = new ArrayDeque();     ✔
+    Collection c = new PriorityQueue();  ✔
+
+    ⭐ 3. List reference
+
+    ✔ VALID
+
+    List l = new ArrayList();       ✔
+    List l = new LinkedList();      ✔
+    List l = new Vector();          ✔
+    List l = new Stack();           ✔  (Stack extends Vector)
+
+
+    ❌ INVALID
+
+    List l = new HashSet();         ❌ (Set ≠ List)
+    List l = new TreeSet();         ❌
+    List l = new PriorityQueue();   ❌
+    List l = new ArrayDeque();      ❌
+    List l = new HashMap();         ❌ (Map not under Collection)
+
+    ⭐ 4. Queue reference
+
+    ✔ VALID
+
+    Queue q = new LinkedList();      ✔
+    Queue q = new ArrayDeque();      ✔
+    Queue q = new PriorityQueue();   ✔
+
+
+    ❌ INVALID
+
+    Queue q = new ArrayList();       ❌ (ArrayList does NOT implement Queue)
+    Queue q = new HashSet();         ❌
+    Queue q = new TreeSet();         ❌
+
+    ⭐ 5. Deque reference (Deque extends Queue)
+
+    ✔ VALID
+
+    Deque d = new LinkedList();      ✔
+    Deque d = new ArrayDeque();      ✔
+
+
+    ❌ INVALID
+
+    Deque d = new PriorityQueue();   ❌ (PriorityQueue is Queue, NOT Deque)
+    Deque d = new ArrayList();       ❌
+
+    ⭐ 6. Set reference
+
+    ✔ VALID
+
+    Set s = new HashSet();           ✔
+    Set s = new LinkedHashSet();     ✔
+    Set s = new TreeSet();           ✔
+    Set s = new CopyOnWriteArraySet(); ✔
+
+
+    ❌ INVALID
+
+    Set s = new ArrayList();         ❌
+    Set s = new PriorityQueue();     ❌
+    Set s = new HashMap();           ❌
+
+    ⭐ 7. Map reference (SEPARATE hierarchy)
+
+    ✔ VALID
+
+    Map m = new HashMap();           ✔
+    Map m = new LinkedHashMap();     ✔
+    Map m = new TreeMap();           ✔
+    Map m = new ConcurrentHashMap(); ✔
+
+
+    ❌ INVALID
+
+    Map m = new ArrayList();         ❌ (Map ≠ Collection)
+    Map m = new HashSet();           ❌
+
+
+    So:
+
+    Deque extends Queue
+
+    It inherits all Queue methods
+
+    And adds extra methods (double-ended operations)
+
+
+    Deque
+      ↑
+    ArrayDeque     ← best & most used
+    LinkedList     ← slower but flexible
+
+    . Queue = new ArrayDeque<>() → YES, valid
+
+    Because ArrayDeque implements Deque,
+    and Deque extends Queue,
+    so ArrayDeque IS-A Queue.
+
+
+    Queue → extends Collection, single-ended operations
+
+    Deque → extends Queue, adds double-ended operations
+
+    PriorityQueue → implements Queue, not Deque → can only use Queue reference
+
+    LinkedList / ArrayDeque → implement Deque → can use Deque or Queue reference
+
+
+
+
+              😂  INTERFACES
+
+                Iterable
+
+                Collection
+
+                List
+
+                Queue
+
+                Deque
+
+                Set
+
+                SortedSet
+
+                NavigableSet
+
+                Map
+
+                SortedMap
+
+                NavigableMap
+
+              😂 CLASSES
+
+               🚦 List classes
+
+                ArrayList
+
+                LinkedList
+
+                Vector
+
+                Stack
+
+              🚦  Queue/Deque classes
+
+                LinkedList
+
+                PriorityQueue
+
+                ArrayDeque
+
+            🚦    Set classes
+
+                HashSet
+
+                LinkedHashSet
+
+                TreeSet
+
+               🚦 Map classes
+
+                HashMap
+
+                LinkedHashMap
+
+                TreeMap
+
+                Hashtable
+
+                ConcurrentHashMap

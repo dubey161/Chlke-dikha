@@ -1,0 +1,376 @@
+# Java Collections – Deque, ArrayDeque, List, ArrayList, LinkedList
+
+---
+
+## 1️⃣ Deque (Double Ended Queue)
+
+### What is Deque?
+
+* `Deque` extends `Queue`
+* **Insertion & removal possible from both ends**
+* Can behave as:
+
+  * Queue (FIFO)
+  * Stack (LIFO)
+
+### Queue vs Deque
+
+| Queue          | Deque                 |
+| -------------- | --------------------- |
+| Add → last     | Add → first / last    |
+| Remove → first | Remove → first / last |
+
+---
+
+## 2️⃣ Deque Methods (Important)
+
+### ➕ Insertion
+
+| Method         | Position | Failure Behavior   |
+| -------------- | -------- | ------------------ |
+| `addFirst()`   | front    | throws exception   |
+| `offerFirst()` | front    | returns true/false |
+| `addLast()`    | back     | throws exception   |
+| `offerLast()`  | back     | returns true/false |
+
+### ➖ Removal
+
+| Method          | Position | Failure Behavior |
+| --------------- | -------- | ---------------- |
+| `removeFirst()` | front    | throws exception |
+| `pollFirst()`   | front    | returns null     |
+| `removeLast()`  | back     | throws exception |
+| `pollLast()`    | back     | returns null     |
+
+### 👀 Examine (Peek)
+
+| Method                       | Behavior                  |
+| ---------------------------- | ------------------------- |
+| `getFirst()` / `getLast()`   | throws exception if empty |
+| `peekFirst()` / `peekLast()` | returns null if empty     |
+
+---
+
+## 3️⃣ Old Queue Methods in Deque
+
+| Method     | Internally calls |
+| ---------- | ---------------- |
+| `add()`    | `addLast()`      |
+| `offer()`  | `offerLast()`    |
+| `remove()` | `removeFirst()`  |
+| `poll()`   | `pollFirst()`    |
+| `peek()`   | `peekFirst()`    |
+
+➡️ Using only Queue methods → behaves like normal FIFO queue
+
+---
+
+## 4️⃣ Deque as Stack
+
+| Stack Operation | Deque Method              |
+| --------------- | ------------------------- |
+| push            | `addFirst()` / `push()`   |
+| pop             | `removeFirst()` / `pop()` |
+
+---
+
+## 5️⃣ ArrayDeque
+
+### About
+
+* Concrete implementation of `Deque`
+* Backed by **resizable array**
+* Faster than `Stack`
+* **Not thread-safe**
+
+### Example – Queue
+
+```java
+Deque<Integer> dq = new ArrayDeque<>();
+dq.addLast(1);
+dq.addLast(5);
+dq.addLast(10);
+System.out.println(dq.pollFirst()); // 1
+```
+
+### Example – Stack
+
+```java
+Deque<Integer> stack = new ArrayDeque<>();
+stack.push(1);
+stack.push(5);
+stack.push(10);
+System.out.println(stack.pop()); // 10
+```
+
+### Time Complexity
+
+| Operation         | Complexity     |
+| ----------------- | -------------- |
+| Insert first/last | O(1) amortized |
+| Remove first/last | O(1)           |
+| Peek              | O(1)           |
+| Resize            | O(n) (rare)    |
+
+---
+
+## 6️⃣ Thread-safe Versions
+
+| Collection    | Thread-safe Version     |
+| ------------- | ----------------------- |
+| PriorityQueue | `PriorityBlockingQueue` |
+| ArrayDeque    | `ConcurrentLinkedDeque` |
+
+---
+
+## 7️⃣ List Interface
+
+### What is List?
+
+* Ordered collection
+* Allows **duplicates**
+* **Index-based access** (0-based)
+
+### Difference: List vs Queue
+
+| Queue                | List                |
+| -------------------- | ------------------- |
+| Add/remove ends only | Add/remove anywhere |
+| FIFO                 | Index-based         |
+
+---
+
+## 8️⃣ List-Specific Methods
+
+| Method              | Description                  |
+| ------------------- | ---------------------------- |
+| `add(index, e)`     | insert & shift right         |
+| `set(index, e)`     | replace (no shift)           |
+| `remove(index)`     | remove & shift left          |
+| `get(index)`        | access element               |
+| `indexOf()`         | first occurrence             |
+| `lastIndexOf()`     | last occurrence              |
+| `subList(from, to)` | view of list                 |
+| `listIterator()`    | forward + backward iteration |
+
+---
+
+## 9️⃣ ArrayList
+
+### Characteristics
+
+* Backed by array
+* Fast random access
+* Slow insert/delete in middle
+* **Not thread-safe**
+
+### Example
+
+```java
+List<Integer> list = new ArrayList<>();
+list.add(100);
+list.add(200);
+list.add(1, 150); // shift
+```
+
+### Time Complexity
+
+| Operation         | Complexity     |
+| ----------------- | -------------- |
+| Add at end        | O(1) amortized |
+| Add/remove middle | O(n)           |
+| Get by index      | O(1)           |
+
+### Thread-safe Version
+
+* `CopyOnWriteArrayList`
+
+---
+
+## 🔁 ListIterator
+
+### Why ListIterator?
+
+* Traverse **forward + backward**
+* Modify list during iteration
+
+### Key Methods
+
+| Method                         | Purpose               |
+| ------------------------------ | --------------------- |
+| `hasNext()` / `next()`         | forward               |
+| `hasPrevious()` / `previous()` | backward              |
+| `add(e)`                       | insert at cursor      |
+| `set(e)`                       | replace last returned |
+
+---
+
+## 🔗 LinkedList
+
+### Characteristics
+
+* Doubly linked list
+* Implements **List + Deque**
+* Fast insert/delete
+* Slow random access
+
+### Example
+
+```java
+LinkedList<Integer> ll = new LinkedList<>();
+ll.addFirst(100);
+ll.addLast(300);
+ll.add(1, 200);
+```
+
+### Time Complexity
+
+| Operation             | Complexity |
+| --------------------- | ---------- |
+| Add/remove first/last | O(1)       |
+| Add/remove by index   | O(n)       |
+| Get by index          | O(n)       |
+
+---
+
+## 1️⃣1️⃣ Vector
+
+### Characteristics
+
+* Thread-safe ArrayList
+* All methods synchronized
+* Slower due to locking
+
+```java
+Vector<Integer> v = new Vector<>();
+v.add(10);
+```
+
+---
+
+## 1️⃣2️⃣ Stack
+
+### About
+
+* Extends `Vector`
+* Thread-safe
+* LIFO
+
+```java
+Stack<Integer> stack = new Stack<>();
+stack.push(10);
+stack.pop();
+```
+
+---
+
+## 1️⃣3️⃣ Summary Table
+
+| Collection           | Thread-safe | Order | Null | Duplicate |
+| -------------------- | ----------- | ----- | ---- | --------- |
+| ArrayDeque           | ❌           | Yes   | ❌    | Yes       |
+| LinkedList           | ❌           | Yes   | Yes  | Yes       |
+| ArrayList            | ❌           | Yes   | Yes  | Yes       |
+| CopyOnWriteArrayList | ✅           | Yes   | Yes  | Yes       |
+| Vector               | ✅           | Yes   | Yes  | Yes       |
+| Stack                | ✅           | LIFO  | Yes  | Yes       |
+
+---
+
+✅ **This document covers Deque, ArrayDeque, List, ArrayList, LinkedList, Vector & Stack with concepts, methods, time complexity, thread-safety, and examples.**
+
+
+Deque (interface)
+ ├── ArrayDeque
+ ├── LinkedList
+ ├── ConcurrentLinkedDeque
+ └── LinkedBlockingDeque
+Deque<Integer> dq = new ArrayDeque<>();
+Deque<Integer> dq = new LinkedList<>();
+Deque<Integer> dq = new ConcurrentLinkedDeque<>();
+Deque<Integer> dq = new LinkedBlockingDeque<>();
+
+
+Deque<Integer> dq = new ArrayDeque<>();
+Notes
+
+✔ Fastest
+❌ Not thread-safe
+❌ No null
+
+dq.addLast(1);   // queue
+dq.addLast(2);
+
+System.out.println(dq.removeFirst()); // 1
+
+dq.push(10);     // stack
+dq.push(20);
+
+System.out.println(dq.pop()); // 20
+
+
+
+LinkedList (List + Deque)
+When to use
+Need List + Deque behavior
+✔ Allows null
+❌ Not thread-safe
+❌ Slower than ArrayDeque
+✔ Implements List also
+
+Frequent insert/remove
+
+Deque<Integer> dq = new LinkedList<>();
+
+dq.addFirst(1);
+dq.addLast(2);
+
+System.out.println(dq.removeLast()); // 2
+
+
+③ ConcurrentLinkedDeque (Thread-safe, Non-blocking)
+When to use
+
+Multi-threaded
+
+High concurrency
+
+Non-blocking
+Notes
+
+✔ Thread-safe
+✔ Lock-free (CAS)
+❌ No blocking operations
+❌ No null
+
+
+Deque<Integer> dq = new ConcurrentLinkedDeque<>();
+
+dq.add(1);
+dq.add(2);
+
+System.out.println(dq.poll());
+
+
+④ LinkedBlockingDeque (Thread-safe, Blocking)
+When to use
+
+Producer–Consumer
+
+Need blocking behavior
+
+Notes
+
+✔ Thread-safe
+✔ Blocking operations
+❌ Slightly slower
+❌ No null
+Deque<Integer> dq = new LinkedBlockingDeque<>(2);
+
+dq.put(1);   // waits if full
+dq.put(2);
+
+System.out.println(dq.take()); // waits if empty
+
+
+Deque has multiple implementations; ArrayDeque is the fastest but not the only one.

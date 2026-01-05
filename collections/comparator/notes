@@ -1,0 +1,37 @@
+| Method      | What it does            | If queue is empty / fails |
+| ----------- | ----------------------- | ------------------------- |
+| `add()`     | Insert element          | Throws exception          |
+| `offer()`   | Insert element          | Returns false             |
+| `poll()`    | Remove & return head    | Returns null              |
+| `remove()`  | Remove & return head    | Throws exception          |
+| `peek()`    | Return head (no remove) | Returns null              |
+| `element()` | Return head (no remove) | Throws exception          |
+
+
+Why Comparator & Comparable?
+
+👉 Java doesn’t know how to compare objects
+
+So we need:
+
+Comparator → external comparison logic
+
+Comparable → internal (class-level) comparison logic
+
+
+Comparator (Most Important for Interviews)
+Definition
+
+Functional Interface
+
+Has method:
+
+int compare(T o1, T o2);
+| Return Value | Meaning |
+| ------------ | ------- |
+| > 0          | swap    |
+| = 0          | equal   |
+| < 0          | no swap |
+
+
+
