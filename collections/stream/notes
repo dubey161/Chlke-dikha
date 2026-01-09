@@ -1,0 +1,678 @@
+1️⃣ What is Stream?
+
+Stream is a lazy pipeline used to process data from a collection/array using functional operations.
+
+Important Points
+
+Stream does NOT store data
+
+Stream does NOT modify original collection
+
+Stream works only when terminal operation is called
+
+Stream can be used only once
+
+
+2️⃣ Stream Pipeline
+
+SOURCE → INTERMEDIATE OPERATIONS → TERMINAL OPERATION
+
+
+list.stream()        // Source
+    .filter(...)     // Intermediate
+    .map(...)        // Intermediate
+    .forEach(...);   // Terminal
+
+
+⚠️ Without terminal operation → NOTHING EXECUTES
+
+3️⃣ Lazy Streaming (MOST IMPORTANT)
+What is Lazy Streaming?
+
+Intermediate operations are not executed immediately.
+They execute only when terminal operation is called.
+
+Example (LAZY – NOTHING PRINTS)
+
+List<Integer> list = List.of(1, 2, 3, 4);
+
+list.stream()
+    .filter(n -> {
+        System.out.println("Filter: " + n);
+        return n > 2;
+    });
+
+❌ Because no terminal operation
+
+list.stream()
+    .filter(n -> {
+        System.out.println("Filter: " + n);
+        return n > 2;
+    })
+    .count();
+
+OUTPUT:
+Filter: 1
+Filter: 2
+Filter: 3
+Filter: 4
+
+
+4️⃣ filter() – Predicate
+
+Filters elements based on condition.
+
+list.stream()
+    .filter(n -> {
+        System.out.println("Checking: " + n);
+        return n % 2 == 0;
+    })
+    .forEach(System.out::println);
+
+Checking: 1
+Checking: 2
+2
+Checking: 3
+Checking: 4
+4
+
+5️⃣ map() – Transformation
+
+Transforms each element.
+
+list.stream()
+    .map(n -> {
+        System.out.println("Mapping: " + n);
+        return n * 10;
+    })
+    .forEach(System.out::println);
+
+
+Mapping: 1
+10
+Mapping: 2
+20
+Mapping: 3
+30
+Mapping: 4
+40
+
+6️⃣ filter + map (Execution Order)
+
+Streams work element by element, not operation by operation.
+
+list.stream()
+    .filter(n -> {
+        System.out.println("Filter: " + n);
+        return n > 2;
+    })
+    .map(n -> {
+        System.out.println("Map: " + n);
+        return n * 2;
+    })
+    .forEach(System.out::println);
+
+
+7️⃣ flatMap() – Flattening
+map() ❌ (Gives Stream<Stream>)
+
+List<List<Integer>> lists = List.of(
+    List.of(1, 2),
+    List.of(3, 4)
+);
+
+lists.stream()
+     .map(l -> l.stream())
+     .forEach(System.out::println);
+
+
+OUTPUT:
+java.util.stream.ReferencePipeline$Head@xxxx
+java.util.stream.ReferencePipeline$Head@xxxx
+
+
+lists.stream()
+     .flatMap(l -> l.stream())
+     .forEach(System.out::println);
+o/p
+1
+2
+3
+4
+
+8️⃣ distinct() – Remove Duplicates
+
+List<Integer> nums = List.of(1, 2, 2, 3, 3);
+nums.stream()
+    .distinct()
+    .forEach(System.out::println);
+
+    OUTPUT:
+    1
+    2
+    3
+⚠️ Uses equals() and hashCode()
+
+    9️⃣ sorted()
+    nums.stream()
+        .sorted()
+        .forEach(System.out::println);
+
+
+OUTPUT:
+1
+2
+2
+3
+3
+
+Reverse Order
+.sorted((a, b) -> b - a)
+
+🔟 limit() & skip()
+
+list.stream()
+    .limit(2)
+    .forEach(System.out::println);
+
+    OUTPUT:
+    1
+    2
+
+    list.stream()
+        .skip(2)
+        .forEach(System.out::println);
+
+    OUTPUT:
+    3
+    4
+
+1️⃣1️⃣ peek() – Debugging ONLY
+
+list.stream()
+    .peek(n -> System.out.println("Peek: " + n))
+    .filter(n -> n > 2)
+    .forEach(System.out::println);
+
+
+Peek: 1
+Peek: 2
+Peek: 3
+3
+Peek: 4
+4
+
+
+1️⃣2️⃣ Terminal Operations
+
+forEach()
+list.stream().forEach(System.out::println);
+
+collect()
+List<Integer> newList =
+    list.stream().collect(Collectors.toList());
+
+🔹 reduce() – Aggregation
+✅ Definition
+
+reduce() is a terminal operation used to combine all elements of a stream into a single value using an accumulator function.
+
+👉 It repeatedly applies the operation:
+
+result = result ⊕ element
+
+Code
+List<Integer> list = List.of(1, 2, 3, 4);
+
+int sum = list.stream()
+              .reduce(0, (a, b) -> a + b);
+
+System.out.println(sum);
+
+OUTPUT
+10
+
+Notes
+
+0 → identity (starting value)
+
+(a, b) → accumulator
+
+Common uses: sum, multiplication, max, min
+
+Stream becomes closed after reduce
+
+
+🔹 count()
+✅ Definition
+
+count() is a terminal operation that returns the number of elements present in the stream.
+
+Code
+long c = list.stream().count();
+System.out.println(c);
+
+OUTPUT
+4
+
+Notes
+
+Return type is long
+
+Triggers lazy execution
+
+Stream cannot be reused after this
+
+🔹 findFirst()
+✅ Definition
+
+findFirst() returns the first element of the stream wrapped inside an Optional.
+
+Code
+System.out.println(list.stream().findFirst().get());
+
+OUTPUT
+1
+
+
+Notes
+
+Returns Optional<T>
+
+.get() used only when sure value exists
+
+Maintains encounter order
+
+Safer version: orElse()
+
+
+🔹 anyMatch()
+✅ Definition
+
+anyMatch() checks if at least one element in the stream matches the given condition.
+
+Code
+System.out.println(list.stream().anyMatch(n -> n > 3));
+
+OUTPUT
+true
+
+Notes
+
+Short-circuit operation
+
+Stops once condition is satisfied
+
+🔹 allMatch()
+✅ Definition
+
+allMatch() checks if all elements in the stream satisfy the condition.
+
+Code
+System.out.println(list.stream().allMatch(n -> n > 0));
+
+OUTPUT
+true
+
+🔹 noneMatch()
+✅ Definition
+
+noneMatch() checks if no elements in the stream match the condition.
+
+Code
+System.out.println(list.stream().noneMatch(n -> n < 0));
+
+OUTPUT
+true
+
+
+1️⃣3️⃣ Stream Reuse ❌ NOT ALLOWED
+✅ Rule
+
+A stream can be consumed only once.
+After a terminal operation, the stream is closed permanently.
+
+Code
+Stream<Integer> s = list.stream();
+
+s.forEach(System.out::println); // terminal operation
+s.count(); // ❌ ERROR
+
+OUTPUT
+1
+2
+3
+4
+Exception in thread "main" java.lang.IllegalStateException: stream has already been operated upon or closed
+
+Notes
+
+Always create a new stream
+
+Streams are NOT reusable like collections
+
+1️⃣4️⃣ Parallel Stream
+✅ Definition
+
+parallelStream() splits data into multiple parts and processes them concurrently using multiple CPU cores.
+
+Code
+list.parallelStream()
+    .forEach(System.out::println);
+
+OUTPUT (Example)
+3
+1
+4
+2
+
+
+⚠️ Output order is NOT guaranteed
+
+Important Parallel Stream Notes
+
+
+
+📘 Java Streams: Stream<Integer> vs int[] vs IntStream
+1️⃣ Stream<Integer> (Object Stream)
+✅ Definition
+
+Stream<Integer> is a stream of wrapper objects (Integer).
+It is used when working with Collections or when null values are needed.
+
+📥 Input
+List<Integer> list = List.of(1, 2, 3, 4);
+
+💻 Code
+list.stream()
+    .map(n -> n * 2)
+    .forEach(System.out::println);
+
+🖨 OUTPUT
+2
+4
+6
+8
+
+🧠 Notes
+
+Uses boxing/unboxing
+
+Supports null
+
+Slightly slower than primitive streams
+
+Common with List, Set, Map
+
+2️⃣ int[] → Stream
+✅ Definition
+
+Arrays of primitives (int[]) are NOT collections, but can be converted to a stream using Arrays.stream().
+
+📥 Input
+int[] arr = {1, 2, 3, 4};
+
+💻 Code
+Arrays.stream(arr)
+      .forEach(System.out::println);
+
+🖨 OUTPUT
+1
+2
+3
+4
+
+🧠 Notes
+
+Arrays.stream(int[]) returns IntStream
+
+No boxing overhead
+
+Faster than Stream<Integer>
+
+3️⃣ IntStream (Primitive Stream)
+✅ Definition
+
+IntStream is a primitive stream designed specifically for int values.
+It avoids boxing/unboxing overhead and provides numeric operations.
+
+📥 Input
+IntStream intStream = IntStream.of(1, 2, 3, 4);
+
+💻 Code
+IntStream.of(1, 2, 3, 4)
+         .map(n -> n * 2)
+         .forEach(System.out::println);
+
+🖨 OUTPUT
+2
+4
+6
+8
+
+🧠 Notes
+
+No boxing/unboxing
+
+Faster & memory efficient
+
+Provides numeric methods like sum(), average()
+
+4️⃣ Converting Stream<Integer> → IntStream
+💻 Code
+list.stream()
+    .mapToInt(Integer::intValue)
+    .forEach(System.out::println);
+
+🖨 OUTPUT
+1
+2
+3
+4
+
+🧠 Notes
+
+mapToInt() converts object stream to primitive stream
+
+Required for numeric terminal ops like sum()
+
+5️⃣ Converting IntStream → Stream<Integer>
+💻 Code
+IntStream.of(1, 2, 3)
+         .boxed()
+         .forEach(System.out::println);
+
+🖨 OUTPUT
+1
+2
+3
+
+🧠 Notes
+
+boxed() converts primitive to wrapper
+
+Needed when collecting into List<Integer>
+
+6️⃣ Numeric Terminal Operations (ONLY in Primitive Streams)
+💻 Code
+int sum = IntStream.of(1, 2, 3, 4).sum();
+System.out.println(sum);
+
+🖨 OUTPUT
+10
+
+💻 Average
+System.out.println(IntStream.of(1, 2, 3, 4).average().getAsDouble());
+
+OUTPUT
+2.5
+
+7️⃣ Stream Creation Comparison
+Source	Stream Type
+List<Integer>	Stream<Integer>
+int[]	IntStream
+Stream.of(1,2)	Stream<Integer>
+IntStream.of(1,2)	IntStream
+8️⃣ When to Use What?
+✅ Use Stream<Integer> when:
+
+Working with collections
+
+Need null
+
+Object-based operations
+
+✅ Use IntStream when:
+
+Heavy numeric processing
+
+Performance matters
+
+Sum, average, max, min required
+
+🔥 One-Line Interview Answer
+
+Stream<Integer> uses boxed integers, while IntStream is a primitive stream without boxing and is faster for numeric operations.
+
+Uses ForkJoinPool
+
+Uses multiple threads
+
+Faster for large data
+
+❌ Avoid shared mutable variables
+
+❌ Avoid order-dependent logic
+
+🔥 FINAL QUICK REVISION
+
+reduce() → combine to single value
+
+count() → total elements
+
+findFirst() → first element
+
+anyMatch() → at least one match
+
+allMatch() → all must match
+
+noneMatch() → no match It returns true only if zero elements match the predicate.
+
+Stream reuse → ❌ NOT allowed
+
+parallelStream → unordered, multi-threaded
+
+
+🔹 What is mapToInt()?
+✅ Definition
+
+mapToInt() is an intermediate operation that converts an object stream (Stream<T>) into a primitive IntStream.
+
+It is mainly used for:
+
+Converting wrapper/object values to primitive int
+
+Enabling numeric operations like sum(), average()
+
+📥 Input (Strings)
+List<String> list = List.of("10", "20", "30");
+
+💻 Code – Convert String → int
+list.stream()
+    .mapToInt(Integer::parseInt)
+    .forEach(System.out::println);
+
+🖨 OUTPUT
+10
+20
+30
+
+
+🔹 Lazy Execution Proof
+list.stream()
+    .mapToInt(s -> {
+        System.out.println("Converting: " + s);
+        return Integer.parseInt(s);
+    });
+
+OUTPUT
+(no output – no terminal operation)
+
+Now with Terminal Operation
+list.stream()
+    .mapToInt(s -> {
+        System.out.println("Converting: " + s);
+        return Integer.parseInt(s);
+    })
+    .sum();
+
+OUTPUT
+Converting: 10
+Converting: 20
+Converting: 30
+
+🔥 Difference:
+map(Integer::parseInt).reduce(...)
+vs
+mapToInt(Integer::parseInt).sum()
+
+✅ Both DO the SAME thing
+
+✔️ Convert String → int
+✔️ Sum all elements
+✔️ Return int
+✔️ Same output
+
+List<String> list = List.of("10", "20", "30");
+
+1️⃣ Using map() + reduce()
+int sum = list.stream()
+              .map(Integer::parseInt)
+              .reduce(0, Integer::sum);
+
+What happens internally
+
+"10" → Integer(10) ← BOXING
+
+"20" → Integer(20)
+
+reduce() → UNBOX → add → BOX again
+
+Characteristics
+Point	Value
+Stream type	Stream<Integer>
+Boxing	✅ YES
+Performance	Slower
+Memory	More
+Flexibility	Very high
+2️⃣ Using mapToInt() + sum()
+int sum = list.stream()
+              .mapToInt(Integer::parseInt)
+              .sum();
+
+What happens internally
+
+"10" → int 10
+
+"20" → int 20
+
+sum() → direct primitive addition
+
+Characteristics
+Point	Value
+Stream type	IntStream
+Boxing	❌ NO
+Performance	Faster
+Memory	Less
+Numeric ops	Built-in (sum, avg)
+🔥 KEY DIFFERENCE (ONE LINE)
+
+map() creates wrapper objects (Integer), while mapToInt() works on primitive int and avoids boxing/unboxing.
+
+⚠️ Performance Visual (IMPORTANT)
+map() + reduce()
+"10" → Integer(10) → unbox → add → box → result
+
+mapToInt() + sum()
+"10" → int 10 → add → result
+
