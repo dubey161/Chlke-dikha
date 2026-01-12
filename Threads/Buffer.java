@@ -22,7 +22,7 @@ class Buffer {
 
     synchronized int consume() throws InterruptedException {
         while (queue.isEmpty() && Control.running) {
-            wait();
+            notifyAll();
         }
         int item = queue.poll();
         System.out.println("Consumed: " + item);
