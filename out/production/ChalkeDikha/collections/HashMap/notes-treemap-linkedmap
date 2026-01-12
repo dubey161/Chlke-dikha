@@ -1,0 +1,560 @@
+# 📘 LinkedHashMap & TreeMap – Complete Notes (Implementation + Diagrams)
+
+---
+
+## 🔹 1. LinkedHashMap
+
+### ✅ What is LinkedHashMap?
+
+LinkedHashMap is an **ordered Map implementation** that maintains **insertion order** or **access order**.
+
+---
+
+### 🧱 Data Structures Used
+
+LinkedHashMap internally uses **two data structures together**:
+
+1. **Hash Table (Array of Buckets)** – for fast access
+2. **Doubly Linked List** – for maintaining order
+
+```
+Hashing  +  Doubly Linked List
+```
+
+---
+
+### 🧠 Internal Entry Structure
+
+Each entry stores extra pointers for order:
+
+```
+Entry
+ ├── key
+ ├── value
+ ├── next    (bucket chain)
+ ├── before  (previous node in order)
+ └── after   (next node in order)
+```
+
+---
+
+### 📊 Diagram – LinkedHashMap (Insertion Order)
+
+**Operations:**
+
+```
+put(10, "A")
+put(20, "B")
+put(15, "C")
+```
+
+**Hash Table (Buckets):**
+
+```
+Index 0 -> null
+Index 1 -> (10,A)
+Index 2 -> (20,B)
+Index 3 -> (15,C)
+```
+
+**Doubly Linked List (Order Maintained):**
+
+```
+HEAD
+ ↓
+(10,A) ⇄ (20,B) ⇄ (15,C)
+ ↑                     ↓
+TAIL <-----------------
+```
+
+➡️ Iteration happens using the **linked list**, not the hash table.
+
+---
+
+### 🔁 Access Order Mode (LRU Cache)
+
+```
+new LinkedHashMap<>(16, 0.75f, true);
+```
+
+When an entry is accessed:
+
+```
+Before: A ⇄ B ⇄ C
+Access B
+After:  A ⇄ C ⇄ B
+```
+
+---
+
+### ⏱️ Time Complexity
+
+| Operation | Time |
+| --------- | ---- |
+| put       | O(1) |
+| get       | O(1) |
+| iteration | O(n) |
+
+---
+
+### 🎯 Key Notes (Interview)
+
+* Maintains order
+* Extra memory due to linked list
+* Used in cache / LRU implementations
+* Slightly slower than HashMap
+
+---
+
+---
+
+## 🔹 2. TreeMap
+
+### 🧠 Red-Black Tree Linking – Step by Step (With Arrows)
+
+Below is a **visual explanation** of how `Entry` nodes are linked using **left / right / parent pointers** when inserting keys.
+
+---
+
+### ▶ Insert keys one by one: `10, 5, 15`
+
+---
+
+### 🔹 Step 1: Insert 10 (First node)
+
+```
+Entry(10)
+ ├── key   = 10
+ ├── value = A
+ ├── left  = null
+ ├── right = null
+ ├── parent= null
+ └── color = BLACK   (Root is always BLACK)
+```
+
+Tree:
+
+```
+   10(B)
+```
+
+---
+
+### 🔹 Step 2: Insert 5
+
+Comparison:
+
+```
+5 < 10  → go LEFT
+```
+
+Pointers:
+
+```
+Entry(5).parent → Entry(10)
+Entry(10).left  → Entry(5)
+```
+
+Tree:
+
+```
+      10(B)
+      /
+   5(R)
+```
+
+(Inserted nodes start as RED)
+
+---
+
+### 🔹 Step 3: Insert 15
+
+Comparison:
+
+```
+15 > 10 → go RIGHT
+```
+
+Pointers:
+
+```
+Entry(15).parent → Entry(10)
+Entry(10).right  → Entry(15)
+```
+
+Tree:
+
+```
+        10(B)
+       /     \
+   5(R)     15(R)
+```
+
+---
+
+### 🔗 How Entry fields are linked (Arrow View)
+
+```
+Entry(10)
+ ├── left  ─────▶ Entry(5)
+ ├── right ────▶ Entry(15)
+ └── parent ───▶ null
+
+Entry(5)
+ ├── parent ───▶ Entry(10)
+ ├── left  ────▶ null
+ └── right ───▶ null
+
+Entry(15)
+ ├── parent ───▶ Entry(10)
+ ├── left  ────▶ null
+ └── right ───▶ null
+```
+
+---
+
+### 🎨 Why Coloring is Needed?
+
+Color rules ensure the tree remains **balanced**:
+
+* Root is always BLACK
+* No two RED nodes can be adjacent
+* Every path from root to leaf has same number of BLACK nodes
+
+These rules guarantee:
+
+```
+Tree height = O(log n)
+```
+
+---
+
+### 🧠 Meaning of:
+
+```
+BST + Coloring Rules → Balanced Tree
+```
+
+* **BST** → Left < Root < Right
+* **Coloring rules** → Prevent tree from becoming skewed
+* Result → Fast search, insert, delete
+
+---
+
+📌 This is exactly how **TreeMap internally stores and links entries**.
+
+---
+
+## 🧪 Full Example – Given Insert Sequence (With Update Case)
+
+### Operations
+
+```
+put(10,  "A")
+put(20,  "B")
+put(151, "C2")
+put(101, "A3")
+put(201, "B4")
+put(151, "C6")  // duplicate key → UPDATE
+```
+
+---
+
+### 🔹 Step 1: put(10, "A")
+
+```
+   10(B)
+```
+
+Root node → BLACK
+
+---
+
+### 🔹 Step 2: put(20, "B")
+
+Comparison:
+
+```
+20 > 10 → RIGHT
+```
+
+Tree:
+
+```
+   10(B)
+       \
+       20(R)
+```
+
+---
+
+### 🔹 Step 3: put(151, "C2")
+
+Comparison:
+
+```
+151 > 10 → RIGHT
+151 > 20 → RIGHT
+```
+
+Before balancing:
+
+```
+   10(B)
+       \
+       20(R)
+           \
+           151(R)
+```
+
+⚠️ Red–Red violation → rotation + recolor
+
+After balancing:
+
+```
+        20(B)
+       /     \
+   10(R)   151(R)
+```
+
+---
+
+### 🔹 Step 4: put(101, "A3")
+
+Comparison:
+
+```
+101 > 20  → RIGHT
+101 < 151 → LEFT
+```
+
+Tree:
+
+```
+        20(B)
+       /     \
+   10(B)   151(B)
+           /
+       101(R)
+```
+
+---
+
+### 🔹 Step 5: put(201, "B4")
+
+Comparison:
+
+```
+201 > 20  → RIGHT
+201 > 151 → RIGHT
+```
+
+Tree:
+
+```
+        20(B)
+       /     \
+   10(B)   151(B)
+           /     \
+       101(R)   201(R)
+```
+
+Tree is balanced ✔
+
+---
+
+### 🔹 Step 6: put(151, "C6")  (IMPORTANT)
+
+⚠️ **Duplicate key** detected
+
+What happens internally:
+
+```
+compare(151, 151) == 0
+```
+
+✔ No new node is created
+✔ Tree structure remains SAME
+✔ Only VALUE is replaced
+
+```
+OLD : 151 → "C2"
+NEW : 151 → "C6"
+```
+
+Final Tree Structure:
+
+```
+        20(B)
+       /     \
+   10(B)   151(B)
+           /     \
+       101(R)   201(R)
+```
+
+---
+
+### 🔗 Pointer View (Entry Linking)
+
+```
+Entry(151)
+ ├── key    = 151
+ ├── value  = "C6"   // updated
+ ├── parent → Entry(20)
+ ├── left   → Entry(101)
+ └── right  → Entry(201)
+```
+
+---
+
+### 🧠 Key Takeaways (INTERVIEW GOLD)
+
+* TreeMap **never allows duplicate keys**
+* Duplicate `put()` → **value update only**
+* Structure changes **only if key is new**
+* Sorting is always by **key**, never value
+
+---
+
+### 🎯 One-liner
+
+> TreeMap uses a Red-Black Tree; duplicate keys update values without affecting structure.
+
+---
+
+---
+
+### ✅ What is TreeMap?
+
+TreeMap is a **sorted Map implementation** that keeps keys in **ascending order** (or custom order).
+
+---
+
+### 🧱 Data Structure Used
+
+### ⭐ Red-Black Tree (Self-balancing Binary Search Tree)
+
+```
+BST + Coloring Rules → Balanced Tree
+```
+
+---
+
+### 🧠 Internal Node Structure
+
+```
+Entry
+ ├── key
+ ├── value
+ ├── left
+ ├── right
+ ├── parent
+ └── color (RED / BLACK)
+```
+
+---
+
+### 🌳 Diagram – TreeMap (Natural Order)
+
+**Operations:**
+
+```
+put(10, "A")
+put(20, "B")
+put(15, "C")
+```
+
+**Red-Black Tree Structure:**
+
+```
+        15 (BLACK)
+       /          \
+   10 (RED)     20 (RED)
+```
+
+✔ Tree remains balanced automatically.
+
+---
+
+### 🔄 Sorting Mechanism
+
+Keys are compared using:
+
+* `Comparable` OR
+* `Comparator`
+
+```
+compare(k1, k2)
+```
+
+Left → smaller key
+Right → larger key
+
+---
+
+### 🔁 Iteration Order
+
+TreeMap uses **IN-ORDER traversal**:
+
+```
+Left → Root → Right
+```
+
+Output order:
+
+```
+10 → 15 → 20
+```
+
+---
+
+### ⏱️ Time Complexity
+
+| Operation | Time     |
+| --------- | -------- |
+| put       | O(log n) |
+| get       | O(log n) |
+| remove    | O(log n) |
+
+---
+
+### ⚠️ TreeMap Rules
+
+* ❌ Null keys not allowed
+* ✅ Null values allowed
+* Keys must be comparable
+
+---
+
+---
+
+## 🔥 LinkedHashMap vs TreeMap (Quick Revision)
+
+| Feature         | LinkedHashMap      | TreeMap        |
+| --------------- | ------------------ | -------------- |
+| Order           | Insertion / Access | Sorted         |
+| Data Structure  | HashTable + DLL    | Red-Black Tree |
+| Time Complexity | O(1)               | O(log n)       |
+| Null Key        | 1 allowed          | ❌              |
+| Use Case        | Cache, Order       | Sorted Data    |
+
+---
+
+## 🧠 Memory Trick
+
+```
+HashMap        → No order
+LinkedHashMap → Order
+TreeMap       → Sorted
+```
+
+---
+
+## 🎯 Interview One-Liners
+
+* **LinkedHashMap:** Maintains order using a doubly linked list on top of HashMap.
+* **TreeMap:** Maintains sorted keys using a Red-Black Tree.
+
+---
+
+✅ End of Notes

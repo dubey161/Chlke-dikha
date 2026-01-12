@@ -1,0 +1,293 @@
+🧠 PROCESS & THREADS — COMPLETE NOTES (Java + JVM Perspective)
+1️⃣ What is a Process? ✅
+🔹 Definition
+
+A process is an instance of a program that is being executed.
+
+🔹 Simple Explanation
+
+You write a Java program → Test.java
+
+Compile it → javac Test.java
+
+Run it → java Test
+
+👉 At the moment you run java Test, a PROCESS is created.
+
+🔹 What a Process Contains
+
+Allocated by Operating System
+
+Has its own resources
+
+Memory
+
+JVM instance
+
+Threads
+
+📌 Two different processes never share memory
+
+🔹 Example
+
+Running the same program twice:
+
+java Test
+java Test
+
+
+➡️ Creates two separate processes
+➡️ Each has:
+
+Its own JVM
+
+Its own heap
+
+Its own threads
+
+2️⃣ What is a Thread? ✅
+🔹 Definition
+
+A thread is the smallest sequence of instructions executed independently by the CPU.
+
+🔹 Key Points
+
+Thread is also called Lightweight Process
+
+Threads exist inside a process
+
+A process can have multiple threads
+
+Threads share memory of the process
+
+🔹 Important Rule
+
+When a process starts, it always starts with ONE thread called the Main Thread
+
+🔹 Java Example
+public class Test {
+    public static void main(String[] args) {
+        System.out.println(Thread.currentThread().getName());
+    }
+}
+
+
+OUTPUT
+
+main
+
+3️⃣ Relationship: Process vs Thread
+Process
+ ├── Thread-1
+ ├── Thread-2
+ └── Thread-3
+
+Aspect	Process	Thread
+Memory	Separate	Shared
+Creation cost	Heavy	Light
+Communication	Difficult	Easy
+Isolation	Yes	No
+4️⃣ JVM Memory Structure (VERY IMPORTANT)
+
+Each process gets one JVM instance.
+
+JVM Memory Areas
+JVM Instance
+ ├── Heap
+ ├── Code Segment
+ ├── Data Segment
+ ├── Stack (per thread)
+ ├── Register (per thread)
+ └── Program Counter (per thread)
+
+5️⃣ Memory Area Definitions (Interview Gold)
+🔹 1. Code Segment
+
+Stores compiled machine code
+
+Generated using Interpreter / JIT
+
+Read-only
+
+Shared by all threads
+
+📌 Threads cannot modify code
+
+🔹 2. Data Segment
+
+Stores:
+
+static variables
+
+global variables
+
+Shared by all threads
+
+Needs synchronization
+
+🔹 3. Heap Memory
+
+Stores objects (new keyword)
+
+Shared by all threads in a process
+
+Controlled by:
+
+-Xms256m  (initial heap)
+-Xmx2g    (max heap)
+
+
+📌 Different processes → different heaps
+
+🔹 4. Stack (Per Thread)
+
+Stores:
+
+Method calls
+
+Local variables
+
+Each thread has its own stack
+
+🔹 5. Register (Per Thread)
+
+Stores intermediate CPU values
+
+Used during:
+
+Execution
+
+Context switching
+
+🔹 6. Program Counter (PC)
+
+Points to next instruction to execute
+
+Each thread has its own PC
+
+Increments after each instruction
+
+6️⃣ JVM + Process Creation Flow (Step-by-Step)
+Java Source Code
+      ↓
+javac → Bytecode
+      ↓
+java → Process Created
+      ↓
+JVM Instance Created
+      ↓
+Machine Code Generated (JIT)
+      ↓
+Threads Created
+      ↓
+CPU Executes Threads
+
+7️⃣ How Threads Execute (CORE CONCEPT)
+Threads share:
+
+Code Segment
+
+Heap
+
+Data Segment
+
+Threads have their own:
+
+Stack
+
+Register
+
+Program Counter
+
+8️⃣ What is Context Switching? 🔄
+🔹 Definition
+
+Context switching is the process of saving the state of one thread and restoring another thread so CPU can switch execution.
+
+🔹 Why Needed?
+
+Limited CPU cores
+
+Multiple threads competing
+
+9️⃣ Case 1: Single CPU (Single Core)
+CPU
+ ├── Thread-1 (runs 1 sec)
+ ├── Thread-2 (runs 1 sec)
+ └── Thread-3 (runs 1 sec)
+
+What Happens?
+
+Only one thread runs at a time
+
+OS switches threads rapidly
+
+Looks parallel but is NOT actual parallelism
+
+📌 Context Switching occurs
+
+🔁 Context Switching Flow
+Thread-1
+  ↓ save registers
+Thread-2
+  ↓ save registers
+Thread-3
+  ↓ save registers
+Thread-1 resumes
+
+🔟 Case 2: Multiple CPUs / Multi-Core
+CPU-1 → Thread-1
+CPU-2 → Thread-2
+CPU-3 → Thread-3
+
+What Happens?
+
+Threads run truly parallel
+
+Minimal context switching
+
+High performance
+
+1️⃣1️⃣ Multithreading Definition
+
+Multithreading allows a program to perform multiple operations concurrently by sharing the same process resources.
+
+1️⃣2️⃣ Benefits of Multithreading ✅
+
+Improved Performance
+
+Better CPU Utilization
+
+Responsiveness
+
+Efficient Resource Sharing
+
+1️⃣3️⃣ Challenges of Multithreading ❌
+
+Race Condition
+
+Deadlock
+
+Data Inconsistency
+
+Hard Debugging
+
+Synchronization Overhead
+
+1️⃣4️⃣ Multitasking vs Multithreading
+Multitasking	Multithreading
+Multiple Processes	Multiple Threads
+No memory sharing	Shared memory
+Heavy	Lightweight
+OS-level	JVM-level
+Multitasking:
+Process-1 | Process-2
+
+Multithreading:
+Process
+ ├── Thread-1
+ └── Thread-2
+
+🔚 Final One-Line Summary (Interview Ready)
+
+Process provides isolation and resources, threads provide concurrency and speed by sharing those resources efficiently.
