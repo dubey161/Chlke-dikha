@@ -12,3 +12,11 @@ public class correctDemo {
         new Thread(s::doWork).start();
     }
 }
+
+
+/*
+/
+wait() is mandatory because it suspends the thread and releases the lock.
+ notify() only wakes threads that are already waiting.
+ Without wait(), notify() does nothing and thread coordination fails.
+ */

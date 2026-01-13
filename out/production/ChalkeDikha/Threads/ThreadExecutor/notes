@@ -1,0 +1,494 @@
+# ThreadPoolExecutor — Complete & Deep-Dive Notes (Interview + Practical)
+
+---
+
+## 1️⃣ What is a Thread Pool?
+
+A **Thread Pool** is a managed collection of reusable worker threads that execute submitted tasks.
+
+Instead of:
+
+* Creating a new thread for every task ❌
+
+We:
+
+* Create a fixed/controlled number of threads once
+* Reuse them to execute many tasks ✅
+
+This is implemented in Java using the **Executor Framework** (`java.util.concurrent`).
+
+---
+
+## 2️⃣ Why Thread Pool is Needed?
+
+### ❌ Problems without Thread Pool
+
+* Thread creation is expensive (stack, PC, registers)
+* Uncontrolled thread creation → **CPU context switching**
+* Hard to manage thread lifecycle (start, stop, wait)
+* Risk of **OutOfMemoryError**
+
+### ✅ Benefits of Thread Pool
+
+1. **Thread Reuse** → saves creation cost
+2. **Controlled Concurrency** → avoids CPU thrashing
+3. **Better Performance** → less context switching
+4. **Lifecycle Management** → framework handles it
+5. **Backpressure Support** → via queues
+
+---
+
+## 3️⃣ Executor Framework Hierarchy
+
+```
+Executor (interface)
+   |
+   └── ExecutorService (interface)
+         |
+         ├── ThreadPoolExecutor (class)
+         ├── ScheduledThreadPoolExecutor
+         └── ForkJoinPool
+```
+
+* `Executor` → only `execute()`
+* `ExecutorService` → lifecycle (`shutdown`, `submit`)
+* `ThreadPoolExecutor` → **fully configurable thread pool**
+
+---
+
+## 4️⃣ ThreadPoolExecutor Constructor (MOST IMPORTANT)
+
+```java
+ThreadPoolExecutor(
+  int corePoolSize,
+  int maximumPoolSize,
+  long keepAliveTime,
+  TimeUnit unit,
+  BlockingQueue<Runnable> workQueue,
+  ThreadFactory threadFactory,
+  RejectedExecutionHandler handler
+)
+```
+
+Each parameter matters. Let’s break them.
+
+---
+
+## 5️⃣ corePoolSize (Minimum Threads)
+
+* Minimum number of threads kept alive in the pool
+* Created eagerly or lazily
+* Even if idle → **NOT destroyed** (by default)
+
+### Example
+
+```java
+corePoolSize = 2
+```
+
+➡ Pool always keeps **2 threads alive**
+
+---
+
+## 6️⃣ maximumPoolSize (Upper Limit)
+
+* Maximum threads allowed in pool
+* Extra threads created **only when**:
+
+  * core threads busy
+  * queue is full
+
+### Example
+
+```java
+maximumPoolSize = 4
+```
+
+➡ Pool can grow from 2 → 4 under load
+
+---
+
+## 7️⃣ Task Submission Flow (VERY IMPORTANT)
+
+When a task is submitted:
+
+```
+1️⃣ If active threads < corePoolSize
+   → create new thread
+
+2️⃣ Else try to enqueue task
+
+3️⃣ If queue full AND threads < maxPoolSize
+   → create new thread
+
+4️⃣ Else
+   → reject task
+```
+
+This explains WHY queue is checked before max threads.
+
+---
+
+## 8️⃣ workQueue (Task Buffer)
+
+Holds tasks waiting for execution.
+
+### Types
+
+| Queue               | Bounded | Behavior                      |
+| ------------------- | ------- | ----------------------------- |
+| ArrayBlockingQueue  | ✅       | Fixed capacity (recommended)  |
+| LinkedBlockingQueue | ❌       | Can grow indefinitely (risky) |
+| SynchronousQueue    | ❌       | No storage (direct handoff)   |
+
+⚠️ **Bounded queues are preferred**
+
+---
+
+## 9️⃣ keepAliveTime + allowCoreThreadTimeOut
+
+### keepAliveTime
+
+* Time an **idle thread** waits before termination
+
+### allowCoreThreadTimeOut
+
+* Default: `false`
+* If `true`, even core threads can die after idle time
+
+```java
+executor.allowCoreThreadTimeOut(true);
+```
+
+---
+
+## 🔟 ThreadFactory
+
+Controls **how threads are created**
+
+Can set:
+
+* Thread name
+* Priority
+* Daemon flag
+
+### Example
+
+```java
+ThreadFactory factory = r -> {
+    Thread t = new Thread(r);
+    t.setName("worker-" + t.getId());
+    t.setPriority(Thread.NORM_PRIORITY);
+    return t;
+};
+```
+
+---
+
+## 1️⃣1️⃣ RejectedExecutionHandler
+
+Handles tasks when:
+
+* Queue is full
+* Pool reached max size
+
+### Built-in Policies
+
+| Policy              | Behavior             |
+| ------------------- | -------------------- |
+| AbortPolicy         | Throw exception ❌    |
+| DiscardPolicy       | Silently drop ❌      |
+| CallerRunsPolicy    | Run in caller thread |
+| DiscardOldestPolicy | Drop oldest task     |
+
+### Custom Handler
+
+```java
+RejectedExecutionHandler handler = (task, executor) ->
+    System.out.println("Task rejected: " + task);
+```
+
+---
+
+## 1️⃣2️⃣ ThreadPool Lifecycle
+
+### States
+
+| State      | Meaning                       |
+| ---------- | ----------------------------- |
+| RUNNING    | Accept + execute tasks        |
+| SHUTDOWN   | No new tasks, finish existing |
+| STOP       | Stop immediately              |
+| TERMINATED | All threads stopped           |
+
+### Methods
+
+```java
+shutdown();      // graceful
+shutdownNow();   // force
+isTerminated();
+```
+
+---
+
+## 1️⃣3️⃣ COMPLETE WORKING CODE EXAMPLE
+
+```java
+import java.util.concurrent.*;
+
+public class ThreadPoolDemo {
+    public static void main(String[] args) {
+
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                2,
+                4,
+                10,
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(2),
+                r -> {
+                    Thread t = new Thread(r);
+                    t.setName("worker-" + t.getId());
+                    return t;
+                },
+                (r, ex) -> System.out.println("Task rejected: " + r)
+        );
+
+        for (int i = 1; i <= 7; i++) {
+            final int taskId = i;
+            executor.submit(() -> {
+                System.out.println("Task " + taskId + " executed by " + Thread.currentThread().getName());
+                try { Thread.sleep(5000); } catch (InterruptedException e) {}
+            });
+        }
+
+        executor.shutdown();
+    }
+}
+```
+
+---
+
+## 1️⃣4️⃣ Expected Output (Order may vary)
+
+```
+Task 1 executed by worker-12
+Task 2 executed by worker-13
+Task 3 executed by worker-12
+Task 4 executed by worker-13
+Task 5 executed by worker-14
+Task 6 executed by worker-15
+Task rejected
+```
+
+---
+
+## 1️⃣5️⃣ Interview Question: Why corePoolSize = 2?
+
+### Factors to Consider
+
+1️⃣ CPU Cores
+
+* CPU-bound → threads ≈ cores
+* IO-bound → threads > cores
+
+2️⃣ Task Nature
+
+* CPU intensive → fewer threads
+* IO intensive → more threads
+
+3️⃣ JVM Memory
+
+* Each thread needs stack + heap
+
+4️⃣ Heap per Request
+
+* Memory per task limits concurrency
+
+---
+
+## 1️⃣6️⃣ Thumb Rule Formula
+
+```
+Threads ≈ CPU cores × (1 + wait_time / compute_time)
+```
+
+⚠️ Not final — must validate with:
+
+* Load testing
+* Monitoring
+
+---
+
+👉 corePoolSize = MINIMUM threads
+
+Always alive
+
+Baseline capacity
+
+👉 maxPoolSize = MAXIMUM threads
+
+Upper limit
+
+Used only during spikes
+
+This never changes.
+
+✅ Now, HOW to decide the numbers (CLEAR FLOW)
+STEP 1️⃣ — Find CPU cores (starting point)
+int cpu = Runtime.getRuntime().availableProcessors();
+
+
+Example:
+
+cpu = 8
+
+
+This number is your reference, not the final answer.
+
+STEP 2️⃣ — Identify task type (MOST IMPORTANT)
+
+Ask one question:
+
+“Does my thread mostly COMPUTE or mostly WAIT?”
+
+A) CPU-BOUND (mostly compute)
+
+Examples:
+
+calculations
+
+JSON parsing
+
+encryption
+
+analytics
+
+➡ Thread is busy using CPU
+
+B) I/O-BOUND (mostly waiting)
+
+Examples:
+
+DB calls
+
+REST calls
+
+file read/write
+
+➡ Thread spends time waiting, not using CPU
+
+🎯 NOW THE ACTUAL NUMBERS (MIN & MAX)
+🔹 Case 1: CPU-BOUND tasks
+✅ Minimum (corePoolSize)
+corePoolSize = CPU cores
+
+
+Why?
+
+You don’t want more active threads than CPU cores
+
+Example:
+
+cpu = 8
+corePoolSize = 8   ✅ MIN
+
+✅ Maximum (maxPoolSize)
+maxPoolSize = corePoolSize + 1
+
+
+Why?
+
+Allows tiny flexibility
+
+Avoids context switching
+
+Example:
+
+maxPoolSize = 9   ✅ MAX
+
+❌ What NOT to do
+core = 20
+max = 50
+
+
+This will slow the system.
+
+🔹 Case 2: I/O-BOUND tasks (MOST REAL SYSTEMS)
+✅ Minimum (corePoolSize)
+corePoolSize = 2 × CPU cores
+
+
+Why?
+
+Threads wait on I/O
+
+More threads keep CPU busy
+
+Example:
+
+cpu = 8
+corePoolSize = 16   ✅ MIN
+
+✅ Maximum (maxPoolSize)
+maxPoolSize = 2–4 × CPU cores
+
+
+Why?
+
+Handles traffic spikes
+
+Prevents queue overflow
+
+Example:
+
+maxPoolSize = 32   ✅ MAX
+
+❌ Why NOT choose random numbers (10, 20, 100)?
+
+Because:
+
+Each thread uses memory
+
+Too many threads → context switching
+
+Throughput drops
+
+Latency increases
+
+📌 Why examples use (2, 4)?
+
+This is ONLY for learning, not real systems.
+
+core = 2
+max  = 4
+queue = 2
+
+
+So you can SEE:
+
+core threads
+
+queue filling
+
+max threads
+
+rejection
+
+🧠 Ultra-simple table (REMEMBER THIS)
+Task type	MIN (corePoolSize)	MAX (maxPoolSize)
+CPU-bound	CPU cores	CPU + 1
+I/O-bound	2 × CPU	2–4 × CPU
+🎯 Final interviewer answer (clean & confident)
+
+“corePoolSize is the minimum number of threads kept alive for steady load,
+and maxPoolSize is the maximum allowed during spikes.
+Both are chosen based on CPU cores and whether the task is CPU-bound or I/O-bound.”
+
+7️⃣ Golden rule (optional mention)
+Threads = CPU × (1 + waitTime / computeTime)
+
+One-line interview answer
+
+“Thread pool sizes are chosen based on CPU cores and whether the task is
+ CPU-bound or I/O-bound. Core threads handle steady load, max threads handle
+  spikes, and oversizing causes performance issues.”

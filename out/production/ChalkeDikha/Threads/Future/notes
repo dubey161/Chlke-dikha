@@ -1,0 +1,200 @@
+# Future, Callable & CompletableFuture — Concise Notes
+
+---
+
+## 1️⃣ Why These APIs Exist
+
+* ThreadPoolExecutor runs tasks **asynchronously**.
+* Caller needs:
+
+  * task **status** (done / failed / cancelled)
+  * **result** or **exception**
+* ➜ `Future` provides this bridge between **caller** and **async task**.
+
+---
+
+## 2️⃣ Future (java.util.concurrent.Future)
+
+**Definition:** Represents the result of an asynchronous computation.
+
+### Key Methods
+
+* `cancel(boolean mayInterrupt)` → attempt to stop task
+* `isCancelled()` → was task cancelled?
+* `isDone()` → finished (success / failure / cancelled)
+* `get()` → block until completion
+* `get(timeout, unit)` → block with timeout
+
+### Important Notes
+
+* `submit()` **always returns a Future**
+* `get()` is **blocking**
+* `Future` itself does **not run tasks**
+
+---
+
+## 3️⃣ submit() — Three Flavors
+
+### 1. submit(Runnable)
+
+```java
+Future<?> f = executor.submit(() -> System.out.println("run"));
+```
+
+* Runnable returns nothing
+* `Future<?>` → result is `null`
+* Used for **status tracking only**
+
+---
+
+### 2. submit(Runnable, result)
+
+```java
+List<Integer> list = new ArrayList<>();
+Future<List<Integer>> f = executor.submit(() -> list.add(300), list);
+```
+
+* Returns provided object
+* Works via **shared mutable state**
+* ❌ Not clean, workaround only
+
+---
+
+### 3. submit(Callable<T>) ⭐ (Best)
+
+```java
+Future<Integer> f = executor.submit(() -> 300);
+```
+
+* Returns value
+* Can throw checked exceptions
+* ✔ Clean & type-safe
+
+---
+
+## 4️⃣ Runnable vs Callable
+
+| Runnable             | Callable                 |
+| -------------------- | ------------------------ |
+| No return            | Returns value            |
+| No checked exception | Throws checked exception |
+| Old                  | Modern                   |
+
+---
+
+## 5️⃣ FutureTask (Internal Working)
+
+* `submit()` wraps task into **FutureTask**
+* `FutureTask` implements `RunnableFuture`
+* Maintains task state:
+
+```
+NEW → RUNNING → COMPLETED / FAILED / CANCELLED
+```
+
+---
+
+## 6️⃣ CompletableFuture (Java 8+)
+
+**Advanced Future with chaining & non-blocking style**
+
+Implements:
+
+* `Future`
+* `CompletionStage`
+
+---
+
+## 7️⃣ supplyAsync() — Start Async Task
+
+```java
+CompletableFuture<String> cf =
+    CompletableFuture.supplyAsync(() -> "Hello");
+```
+
+* Uses **ForkJoinPool.commonPool()** by default
+
+### With custom executor
+
+```java
+CompletableFuture.supplyAsync(() -> "Hello", executor);
+```
+
+---
+
+## 8️⃣ thenApply vs thenApplyAsync
+
+```java
+cf.thenApply(v -> v + " World");
+```
+
+* Same thread
+
+```java
+cf.thenApplyAsync(v -> v + " World");
+```
+
+* New thread (ForkJoinPool or provided executor)
+
+---
+
+## 9️⃣ thenCompose (Dependent Async Tasks)
+
+Use when **Task 2 depends on Task 1 result**
+
+```java
+CompletableFuture<String> cf =
+    CompletableFuture.supplyAsync(() -> "Hello")
+        .thenCompose(v ->
+            CompletableFuture.supplyAsync(() -> v + " World")
+        );
+```
+
+* Maintains ordering
+* Avoids nested futures
+
+---
+
+## 🔟 thenAccept (Terminal Stage)
+
+```java
+cf.thenAccept(result -> System.out.println(result));
+```
+
+* Consumes result
+* Returns `CompletableFuture<Void>`
+* Usually **end of chain**
+
+---
+
+## 1️⃣1️⃣ thenCombine (Parallel Tasks)
+
+```java
+CompletableFuture<Integer> f1 = CompletableFuture.supplyAsync(() -> 10);
+CompletableFuture<String> f2 = CompletableFuture.supplyAsync(() -> "K");
+
+CompletableFuture<String> combined =
+    f1.thenCombine(f2, (a, b) -> a + b);
+```
+
+* Runs tasks in parallel
+* Combines results
+
+---
+
+## 1️⃣2️⃣ When to Use What (Interview)
+
+| Scenario        | API               |
+| --------------- | ----------------- |
+| Fire & forget   | Runnable          |
+| Need result     | Callable          |
+| Track status    | Future            |
+| Async pipeline  | CompletableFuture |
+| Dependent async | thenCompose       |
+| Parallel merge  | thenCombine       |
+
+---
+
+## 1️⃣3️⃣ One-Line Interview Summary
+
+> Future tracks async tasks, Callable returns values, and CompletableFuture enables non-blocking async pipelines with chaining.

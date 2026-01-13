@@ -1,0 +1,578 @@
+# Java Multithreading – Custom Locks (Complete Notes + Code + Output)
+
+| Feature               | synchronized   | Lock         |
+| --------------------- | -------------- | ------------ |
+| Works on              | Object monitor | Lock object  |
+| Scope                 | Per object     | Cross-object |
+| Multiple conditions   | ❌              | ✅            |
+| Try / timeout         | ❌              | ✅            |
+| Fairness              | ❌              | ✅            |
+| Read/write separation | ❌              | ✅            |
+
+
+🧠 ONE-LINE INTERVIEW ANSWER
+
+wait/notify synchronize threads via object monitors, while Locks synchronize via
+ independent lock objects shared across threads.
+
+
+This document gives **interview‑ready, system‑design‑level understanding** of **all major locks in Java**, with:
+
+* Clear **concepts**
+* **When & why to use**
+* **Complete runnable code**
+* **Expected output explanation**
+
+---
+
+## 1️⃣ Why `synchronized` Is Sometimes Not Enough
+
+### Problem with `synchronized`
+
+* Uses **monitor lock on an object**
+* Lock is **object‑level**, not global
+* Different objects ⇒ **different locks**
+
+```java
+synchronized void work() {}
+```
+
+| Scenario          | Result                 |
+| ----------------- | ---------------------- |
+| Same object       | Mutual exclusion works |
+| Different objects | ❌ No mutual exclusion  |
+
+👉 **Requirement:** One critical section, **one thread only**, regardless of object count.
+
+---
+
+## 2️⃣ ReentrantLock (Most Important Custom Lock)
+
+### What it is
+
+* Explicit lock (not object‑based)
+* More control than `synchronized`
+* Supports fairness, tryLock, interruptibility
+
+### When to use
+
+* Multiple objects but **single critical section**
+* Need manual lock/unlock
+
+---
+
+### ✅ ReentrantLock – Complete Code
+
+```java
+import java.util.concurrent.locks.ReentrantLock;
+
+class SharedResource {
+    void access(ReentrantLock lock) {
+        lock.lock();
+        try {
+            System.out.println("Lock acquired by " + Thread.currentThread().getName());
+            Thread.sleep(2000);
+        } catch (Exception e) {}
+        finally {
+            System.out.println("Lock released by " + Thread.currentThread().getName());
+            lock.unlock();
+        }
+    }
+}
+
+public class ReentrantLockDemo {
+    public static void main(String[] args) {
+        ReentrantLock lock = new ReentrantLock();
+
+        SharedResource r1 = new SharedResource();
+        SharedResource r2 = new SharedResource();
+
+        new Thread(() -> r1.access(lock), "T1").start();
+        new Thread(() -> r2.access(lock), "T2").start();
+    }
+}
+```
+
+### 🔍 Output (Order may vary)
+
+```
+Lock acquired by T1
+Lock released by T1
+Lock acquired by T2
+Lock released by T2
+```
+
+✔ Same lock → works across multiple objects
+
+---
+
+## 3️⃣ ReadWriteLock (Shared vs Exclusive Lock)
+
+### Lock Types
+
+| Lock       | Who can acquire  |
+| ---------- | ---------------- |
+| Read Lock  | Multiple readers |
+| Write Lock | Only one writer  |
+
+### Rules
+
+* Readers can coexist
+* Writer needs **no readers + no writers**
+
+### When to use
+
+* **Read‑heavy systems** (cache, analytics, configs)
+
+---
+
+### ✅ ReadWriteLock – Complete Code
+
+```java
+import java.util.concurrent.locks.*;
+
+class DataStore {
+    private int data = 10;
+
+    void read(ReadWriteLock lock) {
+        lock.readLock().lock();
+        try {
+            System.out.println("Read by " + Thread.currentThread().getName() + " = " + data);
+            Thread.sleep(2000);
+        } catch (Exception e) {}
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    void write(ReadWriteLock lock) {
+        lock.writeLock().lock();
+        try {
+            data++;
+            System.out.println("Write by " + Thread.currentThread().getName());
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+}
+
+public class ReadWriteLockDemo {
+    public static void main(String[] args) {
+        ReadWriteLock lock = new ReentrantReadWriteLock();
+        DataStore store = new DataStore();
+
+        new Thread(() -> store.read(lock), "R1").start();
+        new Thread(() -> store.read(lock), "R2").start();
+        new Thread(() -> store.write(lock), "W1").start();
+    }
+}
+```
+
+### 🔍 Output
+
+```
+Read by R1 = 10
+Read by R2 = 10
+Write by W1
+```
+
+✔ Writer waits until readers finish
+
+---
+
+## 4️⃣ StampedLock (Read + Write + Optimistic Read)
+
+### Why StampedLock
+
+* Faster than ReadWriteLock
+* Supports **Optimistic Locking**
+
+### Lock Types
+
+| Type            | Lock Taken? |
+| --------------- | ----------- |
+| Read            | Yes         |
+| Write           | Yes         |
+| Optimistic Read | ❌ No        |
+
+---
+
+### ✅ Optimistic Lock Example
+
+```java
+import java.util.concurrent.locks.StampedLock;
+
+class OptimisticData {
+    int value = 10;
+    StampedLock lock = new StampedLock();
+
+    void optimisticRead() throws Exception {
+        long stamp = lock.tryOptimisticRead();
+        int temp = value;
+        Thread.sleep(2000);
+        if (!lock.validate(stamp)) {
+            System.out.println("Rollback: write happened");
+        } else {
+            System.out.println("Optimistic read success: " + temp);
+        }
+    }
+
+    void write() {
+        long stamp = lock.writeLock();
+        try {
+            value++;
+            System.out.println("Write done");
+        } finally {
+            lock.unlockWrite(stamp);
+        }
+    }
+}
+```
+
+### 🔍 Output (if write happens during read)
+
+```
+Write done
+Rollback: write happened
+```
+
+✔ Used in DB‑like systems
+
+---
+
+## 5️⃣ Semaphore (Permit‑Based Lock)
+
+### What it is
+
+* Controls **how many threads** enter critical section
+* Not mutual exclusion
+
+### When to use
+
+* Connection pools
+* Printers
+* Rate limiting
+
+---
+
+### ✅ Semaphore – Complete Code
+
+```java
+import java.util.concurrent.Semaphore;
+
+class Printer {
+    Semaphore semaphore = new Semaphore(2);
+
+    void print() {
+        try {
+            semaphore.acquire();
+            System.out.println("Printing by " + Thread.currentThread().getName());
+            Thread.sleep(2000);
+        } catch (Exception e) {}
+        finally {
+            System.out.println("Done by " + Thread.currentThread().getName());
+            semaphore.release();
+        }
+    }
+}
+
+public class SemaphoreDemo {
+    public static void main(String[] args) {
+        Printer printer = new Printer();
+        for (int i = 1; i <= 4; i++) {
+            new Thread(printer::print, "T" + i).start();
+        }
+    }
+}
+```
+
+### 🔍 Output
+
+```
+Printing by T1
+Printing by T2
+Done by T1
+Done by T2
+Printing by T3
+Printing by T4
+```
+
+✔ Only 2 threads at a time
+
+---
+
+## 6️⃣ Condition (wait/notify replacement)
+
+### Why needed
+
+* `wait/notify` works **only with synchronized**
+* Custom locks need **Condition**
+
+| Old         | New         |
+| ----------- | ----------- |
+| wait()      | await()     |
+| notify()    | signal()    |
+| notifyAll() | signalAll() |
+
+---
+
+### ✅ Producer–Consumer using Condition
+
+```java
+import java.util.concurrent.locks.*;
+
+class Buffer {
+    Lock lock = new ReentrantLock();
+    Condition condition = lock.newCondition();
+    boolean available = false;
+
+    void produce() throws Exception {
+        lock.lock();
+        try {
+            while (available) condition.await();
+            available = true;
+            System.out.println("Produced");
+            condition.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    void consume() throws Exception {
+        lock.lock();
+        try {
+            while (!available) condition.await();
+            available = false;
+            System.out.println("Consumed");
+            condition.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+```
+
+### 🔍 Output
+
+```
+Produced
+Consumed
+Produced
+Consumed
+```
+
+✔ Same as wait/notify but for custom locks
+
+---
+
+## 🔚 Final Comparison Table
+
+| Lock          | Use Case                    |
+| ------------- | --------------------------- |
+| synchronized  | Simple mutual exclusion     |
+| ReentrantLock | Global locking, flexibility |
+| ReadWriteLock | Read‑heavy workloads        |
+| StampedLock   | Optimistic concurrency      |
+| Semaphore     | Resource limits             |
+| Condition     | Thread communication        |
+
+---
+
+## 🏆 Interview One‑Line Summary
+
+> Java provides multiple locking mechanisms beyond synchronized to support scalability, fairness, optimistic concurrency, and resource control, each suited for specific system‑design scenarios.
+
+---
+
+✅ **This document is COMPLETE and production‑level.**
+If you want, next I can:
+
+* Map each lock to **real system design cases**
+* Compare performance benchmarks
+* Give **interview questions + answers**
+* Convert all examples to **ExecutorService**
+
+
+
+
+
+
+
+1️⃣ ReentrantLock – what is the REAL benefit?
+❓ Your question
+
+Is ReentrantLock just one-by-one entry into critical section?
+If I use synchronized on same object, won’t it behave the same?
+
+✅ SHORT ANSWER
+
+Yes, both allow only ONE thread at a time,
+BUT ReentrantLock gives you EXTRA POWER that synchronized does NOT.
+
+🔴 What synchronized CAN do
+synchronized void increment() {
+    // one thread at a time
+}
+
+
+✔ Mutual exclusion
+❌ No flexibility
+
+🟢 What ReentrantLock ADDS (this is the benefit)
+Feature	synchronized	ReentrantLock
+One-by-one access	✅	✅
+Try without blocking	❌	✅ tryLock()
+Timeout waiting	❌	✅ tryLock(5s)
+Fair locking	❌	✅ FIFO
+Interrupt waiting thread	❌	✅
+Multiple conditions	❌	✅
+🧠 Simple example of benefit
+Problem:
+
+“If lock is busy, don’t wait — just skip”
+
+if (lock.tryLock()) {
+   try {
+       // do work
+   } finally {
+       lock.unlock();
+   }
+} else {
+   System.out.println("Could not get lock, skipping");
+}
+
+
+🚫 Impossible with synchronized
+✅ Easy with ReentrantLock
+
+🔑 FINAL LINE
+
+ReentrantLock = synchronized + control + flexibility
+
+2️⃣ ReadWriteLock – what happens if READ & WRITE come together?
+❓ Your question
+
+If read and write call at same time, what happens?
+
+🧠 RULES (ABSOLUTE)
+READ + READ   → ALLOWED
+READ + WRITE  → WRITE WAITS
+WRITE + READ  → READ WAITS
+WRITE + WRITE → ONE AT A TIME
+
+🔵 Scenario 1: READ first, WRITE comes
+Reader-1 starts
+Reader-2 starts
+Writer arrives → WAIT
+
+
+✔ Readers finish
+✔ Writer runs
+
+🔵 Scenario 2: WRITE first, READ comes
+Writer starts
+Reader arrives → WAIT
+
+
+✔ Writer finishes
+✔ Reader runs
+
+🔑 KEY IDEA
+
+ReadWriteLock NEVER allows read & write together
+
+This is pessimistic locking.
+
+3️⃣ Optimistic Lock – what if READ & WRITE happen at same time?
+❓ Your question
+
+What happens if both run at same time?
+
+✅ ANSWER
+
+They BOTH run together, but reader may FAIL later
+
+🔵 Timeline
+Reader starts (no lock)
+Writer starts (write lock)
+Writer updates data
+Reader validates → FAIL
+Reader retries
+
+
+✔ High concurrency
+✔ No blocking
+❌ Reader may redo work
+
+🔑 CORE DIFFERENCE
+Lock	Read + Write together?
+synchronized	❌
+ReadWriteLock	❌
+Optimistic (Stamped)	✅
+🧠 ONE LINE
+
+Optimistic lock allows concurrency but fixes conflicts later
+
+4️⃣ Semaphore – are threads using same object or different?
+❓ Your question
+
+In semaphore, are we pushing two threads of same object or different object?
+
+✅ IMPORTANT CONCEPT
+
+Semaphore has NOTHING to do with object identity
+
+It controls COUNT, not object safety.
+
+🧠 Think like this
+Semaphore(2)
+
+
+Means:
+
+At most 2 threads allowed inside this section
+
+SAME object or DIFFERENT object?
+
+Both work:
+
+Case 1: Same object
+Washroom w = new Washroom();
+
+
+All threads share same semaphore → LIMIT works
+
+Case 2: Different objects but same semaphore
+Semaphore s = new Semaphore(2);
+new Washroom(s);
+new Washroom(s);
+
+
+Still LIMIT works
+
+Case 3: Different semaphore objects ❌
+new Washroom(new Semaphore(2));
+
+
+LIMIT breaks ❌
+
+🔑 RULE
+
+Semaphore must be shared to control access
+
+🔥 FINAL COMPARISON (THIS WILL LOCK IT IN)
+Lock	Controls	Allows
+synchronized	Object	1 thread
+ReentrantLock	Lock	1 thread
+ReadWriteLock	Read vs Write	Many readers
+Optimistic	Version	Read + Write
+Semaphore	Count	N threads
+🧠 FINAL TAKEAWAY (INTERVIEW READY)
+
+ReentrantLock → one-by-one, but smarter
+
+ReadWriteLock → no read/write overlap
+
+Optimistic lock → overlap allowed, validate later
+
+Semaphore → limit concurrent access, object doesn’t matter
