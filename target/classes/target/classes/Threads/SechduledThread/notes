@@ -1,0 +1,113 @@
+🔹 1. shutdown()
+What it does
+
+Initiates an orderly shutdown
+
+Stops accepting new tasks
+
+Already submitted tasks continue execution
+
+Does NOT block the calling thread (main thread continues)
+
+Important Points
+
+No interruption of running tasks
+
+Tasks in queue will execute
+
+Common interview line:
+
+shutdown() allows already submitted tasks to complete normally
+
+Interview Question
+
+❓ Does shutdown interrupt running threads?
+✅ No
+
+🔹 2. awaitTermination(timeout, unit)
+What it does
+
+Blocks the calling thread
+
+Waits up to given timeout
+
+Returns:
+
+true → Executor terminated within timeout
+
+false → Timeout expired, executor still running
+
+Important Points
+
+Must be called after shutdown()
+
+Does NOT force shutdown
+
+It is purely a status check
+
+Interview Question
+
+❓ Does awaitTermination stop threads?
+✅ No, it only waits and checks
+
+🔹 3. shutdownNow()
+What it does
+
+Attempts immediate shutdown
+
+Interrupts running tasks
+
+Returns list of waiting (not started) tasks
+
+Important Points
+
+Best-effort interruption
+
+Running threads may stop only if they handle interruption
+
+Sleeping threads get InterruptedException
+
+Interview Question
+
+❓ Is shutdownNow guaranteed to stop all tasks?
+✅ No (best effort)
+
+2️⃣ SCHEDULED THREAD POOL – DETAILED NOTES
+🔹 What is ScheduledExecutorService?
+
+Child of ExecutorService
+
+Used for delayed & periodic execution
+
+Replacement for Timer
+
+🔹 Scheduling Methods
+1️⃣ schedule(Runnable, delay, unit)
+
+Executes once after delay
+
+2️⃣ schedule(Callable, delay, unit)
+
+Executes once
+
+Returns result via Future
+
+3️⃣ scheduleAtFixedRate(...)
+
+Runs repeatedly at fixed rate
+
+Time counted from start time
+
+If task takes longer → executions may bunch together
+
+4️⃣ scheduleWithFixedDelay(...)
+
+Delay counted after previous task completes
+
+Prevents overlapping executions
+
+🔹 Fixed Rate vs Fixed Delay (INTERVIEW GOLD)
+Feature	Fixed Rate	Fixed Delay
+Timer starts	From start time	After task completes
+Overlapping risk	Yes	No
+Use case	Heartbeats, metrics	Batch jobs, cleanup

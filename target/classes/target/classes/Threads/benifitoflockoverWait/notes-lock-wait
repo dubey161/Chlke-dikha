@@ -1,0 +1,122 @@
+1️⃣ MULTIPLE PRODUCERS + MULTIPLE CONSUMERS
+Case:
+
+3 Producers
+
+3 Consumers
+
+Buffer size = 1
+
+wait/notify behavior ❌
+
+Producer wakes another producer
+
+Consumer wakes another consumer
+
+Threads wake → check condition → go back to wait
+
+CPU wasted
+
+Context switching explosion
+
+You WILL NOT SEE THIS IN OUTPUT
+but JVM is suffering internally.
+
+This is called:
+
+❌ Thundering Herd Problem
+
+Lock + Condition behavior ✅
+
+Producer signals ONLY consumers
+
+Consumer signals ONLY producers
+
+No wrong wakeups
+
+No wasted CPU
+
+👉 This is the REAL BENEFIT
+
+2️⃣ ONE WAIT-SET vs MULTIPLE WAIT-SETS (KEY DIFFERENCE)
+wait/notify
+ONE wait queue per object
+
+
+All threads wait together.
+
+Lock + Condition
+Multiple wait queues
+
+
+Example:
+
+notFull  → producers only
+notEmpty → consumers only
+
+
+This is IMPOSSIBLE with wait/notify.
+
+3️⃣ SCALING TEST (YOU DID NOT TRY THIS YET)
+
+Try this change 👇
+(then difference becomes obvious)
+
+for (int i = 0; i < 3; i++) {
+    new Thread(new Producer(buffer)).start();
+    new Thread(new Consumer(buffer)).start();
+}
+
+
+Now observe:
+
+wait/notify → heavy CPU usage, random wakeups
+
+lock/condition → smooth execution
+
+4️⃣ FAIRNESS & CONTROL (IMPOSSIBLE WITH synchronized)
+
+Lock gives:
+
+tryLock()
+
+timeout
+
+fairness
+
+interruptible waiting
+
+wait/notify gives:
+
+❌ none of the above
+
+🧠 VERY IMPORTANT REALIZATION (PLEASE READ)
+
+Correctness ≠ Performance
+
+Your example shows correctness
+Locks are about performance + scalability
+
+🔑 WHY JAVA DID NOT REMOVE wait/notify?
+
+Because:
+
+Simple cases
+
+Teaching
+
+Backward compatibility
+
+But modern Java concurrency uses Locks internally
+(ConcurrentHashMap, ThreadPoolExecutor, etc.)
+
+🧠 FINAL ANSWER TO YOUR QUESTION
+❓ “Both outputs are same, where is benefit?”
+✅ FINAL ANSWER:
+
+The benefit of Lock is NOT visible in small examples.
+It becomes critical when you have multiple threads, multiple conditions, and high contention.
+
+🧠 ONE-LINE INTERVIEW ANSWER (MEMORIZE)
+
+wait/notify works for simple cases, but Lock + Condition scales correctly under concurrency.

@@ -1,0 +1,109 @@
+Java 21 – Sequenced Collections (One-Page Notes)
+1️⃣ What is a Sequenced Collection?
+
+A Sequenced collection is an ordered collection that:
+
+Has a well-defined first and last element
+
+Supports a reversed view
+
+May (but need not) support insertion/removal at both ends
+
+Sequenced ≠ Deque
+Sequenced is about order awareness, not mandatory double-ended mutation.
+
+2️⃣ Interfaces Introduced in Java 21
+
+| Interface                | Description                                 |
+| ------------------------ | ------------------------------------------- |
+| `SequencedCollection<E>` | Base interface for ordered collections      |
+| `SequencedSet<E>`        | Sequenced collection with **no duplicates** |
+| `SequencedMap<K,V>`      | Sequenced key-value map                     |
+
+
+3️⃣ Conditions to be Sequenced (MUST KNOW)
+
+A collection is sequenced if it satisfies ALL:
+
+Predictable order
+
+Insertion order or
+
+Sorted order
+
+First & Last element are well-defined
+
+Reversible view exists
+
+⚠ Supporting insertion/removal at both ends is optional
+
+4️⃣ Common Methods (Very Important)
+
+🔹 SequencedCollection<E>
+E getFirst();
+E getLast();
+
+void addFirst(E e);
+void addLast(E e);
+
+E removeFirst();
+E removeLast();
+
+SequencedCollection<E> reversed();
+
+
+🔹 SequencedMap<K,V>
+
+Map.Entry<K,V> firstEntry();
+Map.Entry<K,V> lastEntry();
+
+void putFirst(K key, V value);
+void putLast(K key, V value);
+
+Map.Entry<K,V> pollFirstEntry();
+Map.Entry<K,V> pollLastEntry();
+
+SequencedMap<K,V> reversed();
+
+
+5️⃣ Collections Supporting Sequenced Feature
+
+✅ SequencedCollection
+
+| Collection | Order     |
+| ---------- | --------- |
+| `List`     | Insertion |
+| `Deque`    | Insertion |
+
+✅ SequencedSet
+
+| Collection      | Order     | Notes                |
+| --------------- | --------- | -------------------- |
+| `LinkedHashSet` | Insertion | Full support         |
+| `TreeSet`       | Sorted    | `addFirst/addLast` ❌ |
+
+✅ SequencedMap
+
+| Collection      | Order     | Notes                |
+| --------------- | --------- | -------------------- |
+| `LinkedHashMap` | Insertion | Full support         |
+| `TreeMap`       | Sorted    | `putFirst/putLast` ❌ |
+
+
+6️⃣ Collections NOT Sequenced ❌
+| Collection      | Reason                   |
+| --------------- | ------------------------ |
+| `HashSet`       | No order                 |
+| `HashMap`       | No order                 |
+| `Hashtable`     | No order                 |
+| `Queue`         | No first/last control    |
+| `PriorityQueue` | No predictable iteration |
+
+9️⃣ One-Line Interview Summary ⭐
+
+Sequenced collections unify ordered collections by providing common first/last and reverse operations, while allowing implementations to restrict unsupported mutations.
+
+🔟 Memory Trick (Best One)
+
+Sequenced = Knows order
+Deque = Controls order

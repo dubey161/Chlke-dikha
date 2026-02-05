@@ -1,0 +1,374 @@
+MULTI-THREADING – PART 2 (COMPLETE NOTES)
+
+1. What is a Thread?
+
+A thread is a lightweight unit of execution inside a process.
+Java programs are multithreaded by default (main thread).
+
+2. Ways to Create a Thread (VERY IMPORTANT INTERVIEW QUESTION)
+There are TWO ways:
+
+Implementing Runnable interface
+
+Extending Thread class
+
+
+3. Why Java Provides TWO Ways?
+Java Limitation:
+
+A class can extend only ONE class
+
+A class can implement MULTIPLE interfaces
+
+Why Runnable is preferred:
+
+Allows your class to extend another class
+
+Better design, flexibility, and composition
+
+Industry standard
+
+👉 Runnable = task
+👉 Thread = execution mechanism
+
+
+4. Runnable vs Thread – Class Architecture
+Runnable (interface)
+   |
+   |-- implemented by
+   |
+Thread (class)
+
+
+Runnable has only one method → run()
+
+Thread implements Runnable
+
+Thread manages lifecycle, scheduling, sleep, interrupt
+
+
+5. Creating Thread using Runnable (RECOMMENDED)
+Step 1: Create Runnable class
+
+class MyTask implements Runnable {
+    @Override
+    public void run() {
+        System.out.println("Code executed by thread: "
+                + Thread.currentThread().getName());
+    }
+}
+
+
+Step 2: Create Thread object
+public class Main {
+    public static void main(String[] args) {
+        Runnable task = new MyTask();
+        Thread t = new Thread(task);
+        t.start();
+    }
+}
+
+Output
+Code executed by thread: Thread-0
+
+INTERNAL WORKING (VERY IMPORTANT)
+thread.start()
+   ↓
+Thread.run()
+   ↓
+if (target != null)
+   target.run();
+
+👉 target = Runnable object
+👉 Thread delegates execution to Runnable
+
+6. Creating Thread by Extending Thread Class
+
+Code
+class MyThread extends Thread {
+    @Override
+    public void run() {
+        System.out.println("Thread running: "
+                + Thread.currentThread().getName());
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MyThread t = new MyThread();
+        t.start();
+    }
+}
+
+Drawback
+
+Cannot extend any other class
+
+Not preferred in real projects
+
+7. Thread Lifecycle (VERY IMPORTANT)
+States:
+
+NEW
+
+Thread object created
+
+new Thread()
+
+RUNNABLE
+
+start() called
+
+Waiting for CPU
+
+RUNNING (not official state)
+
+Got CPU time
+
+BLOCKED
+
+Waiting for lock / I/O
+
+Releases monitor lock
+
+WAITING
+
+wait()
+
+Releases monitor lock
+
+Needs notify() / notifyAll()
+
+TIMED_WAITING
+
+sleep(time)
+
+Does NOT release lock
+
+TERMINATED
+
+Execution finished
+
+Cannot restart
+
+8. Monitor Lock (CORE CONCEPT)
+
+What is Monitor Lock?
+
+Every object in Java has a monitor lock
+
+Used by synchronized
+
+Rule:
+
+Only ONE thread can hold the lock of an object
+
+Other threads must WAIT
+
+9. Synchronized Method vs Block
+Synchronized Method
+synchronized void task() {
+    // critical section
+}
+
+Synchronized Block
+void task() {
+    synchronized(this) {
+        // critical section
+    }
+}
+
+
+👉 Lock is always on the object, not the method
+
+10. Monitor Lock Example (VERY IMPORTANT)
+Code
+class MonitorLockExample {
+
+    synchronized void taskOne() {
+        try {
+            Thread.sleep(10000);
+            System.out.println("Task One Completed");
+        } catch (InterruptedException e) {}
+    }
+
+    void taskTwo() {
+        System.out.println("Task Two - Before Sync");
+        synchronized(this) {
+            System.out.println("Task Two - Inside Sync");
+        }
+    }
+
+    void taskThree() {
+        System.out.println("Task Three Executed");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MonitorLockExample obj = new MonitorLockExample();
+
+        new Thread(() -> obj.taskOne()).start();
+        new Thread(() -> obj.taskTwo()).start();
+        new Thread(() -> obj.taskThree()).start();
+    }
+}
+
+Output Order
+Task Two - Before Sync
+Task Three Executed
+Task One Completed
+Task Two - Inside Sync
+
+WHY?
+
+taskOne() locks object
+
+taskTwo() waits
+
+taskThree() not synchronized → executes immediately
+
+11. Inter-Thread Communication
+Methods:
+
+wait() → releases lock
+
+notify() → wakes one thread
+
+notifyAll() → wakes all threads
+
+⚠ Must be called inside synchronized block
+
+12. Producer–Consumer (SINGLE ITEM VERSION)
+Shared Resource
+
+class SharedResource {
+    private boolean itemAvailable = false;
+
+    synchronized void consume() throws InterruptedException {
+        while (!itemAvailable) {
+            System.out.println("Consumer waiting...");
+            wait();
+        }
+        itemAvailable = false;
+        System.out.println("Item Consumed");
+    }
+
+    synchronized void produce() {
+        itemAvailable = true;
+        System.out.println("Item Produced");
+        notifyAll();
+    }
+}
+
+Main
+public class Main {
+    public static void main(String[] args) {
+
+        SharedResource resource = new SharedResource();
+
+        Thread consumer = new Thread(() -> {
+            try {
+                resource.consume();
+            } catch (InterruptedException e) {}
+        });
+
+        Thread producer = new Thread(() -> {
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {}
+            resource.produce();
+        });
+
+        consumer.start();
+        producer.start();
+    }
+}
+
+Output
+Consumer waiting...
+Item Produced
+Item Consumed
+
+
+13. PRODUCER–CONSUMER PROBLEM (ASSIGNMENT – FULL QUEUE VERSION)
+Requirements:
+
+Fixed size buffer (queue)
+
+Producer waits if buffer full
+
+Consumer waits if buffer empty
+
+
+import java.util.LinkedList;
+import java.util.Queue;
+
+class Buffer {
+    private Queue<Integer> queue = new LinkedList<>();
+    private int capacity = 5;
+
+    synchronized void produce(int item) throws InterruptedException {
+        while (queue.size() == capacity) {
+            wait();
+        }
+        queue.add(item);
+        System.out.println("Produced: " + item);
+        notifyAll();
+    }
+
+    synchronized int consume() throws InterruptedException {
+        while (queue.isEmpty()) {
+            wait();
+        }
+        int item = queue.poll();
+        System.out.println("Consumed: " + item);
+        notifyAll();
+        return item;
+    }
+}
+
+Producer
+class Producer implements Runnable {
+    Buffer buffer;
+
+    Producer(Buffer buffer) {
+        this.buffer = buffer;
+    }
+
+    public void run() {
+        int i = 0;
+        while (true) {
+            try {
+                buffer.produce(i++);
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {}
+        }
+    }
+}
+
+Consumer
+class Consumer implements Runnable {
+    Buffer buffer;
+
+    Consumer(Buffer buffer) {
+        this.buffer = buffer;
+    }
+
+    public void run() {
+        while (true) {
+            try {
+                buffer.consume();
+                Thread.sleep(1500);
+            } catch (InterruptedException e) {}
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Buffer buffer = new Buffer();
+        new Thread(new Producer(buffer)).start();
+        new Thread(new Consumer(buffer)).start();
+    }
+}

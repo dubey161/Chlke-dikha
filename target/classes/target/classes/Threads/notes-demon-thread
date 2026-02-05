@@ -1,0 +1,356 @@
+# MULTITHREADING – PART 3 (COMPLETE NOTES + CODE)
+
+This document completes **Multithreading Part 3** and covers:
+
+1. Producer–Consumer Problem (Complete Solution)
+2. Why `stop()`, `suspend()`, `resume()` are Deprecated
+3. Thread `join()`
+4. Thread Priority
+5. Daemon Threads
+
+All topics include **concepts, execution flow, and runnable Java code**.
+
+---
+
+## 1. PRODUCER–CONSUMER PROBLEM (CLASSIC INTERVIEW QUESTION)
+
+### Problem Statement
+
+* Two threads: **Producer** and **Consumer**
+* Shared resource: **bounded queue (buffer)**
+* Producer:
+
+  * Produces items into queue
+  * Waits if queue is FULL
+* Consumer:
+
+  * Consumes items from queue
+  * Waits if queue is EMPTY
+
+### Key Concepts Used
+
+* `synchronized`
+* Monitor lock (object-level)
+* `wait()` / `notifyAll()`
+
+---
+
+### Shared Buffer Implementation
+
+```java
+import java.util.LinkedList;
+import java.util.Queue;
+
+class Buffer {
+    private Queue<Integer> queue = new LinkedList<>();
+    private int capacity;
+
+    Buffer(int capacity) {
+        this.capacity = capacity;
+    }
+
+    public synchronized void produce(int item) throws InterruptedException {
+        while (queue.size() == capacity) {
+            wait();
+        }
+        queue.add(item);
+        System.out.println("Produced: " + item);
+        notifyAll();
+    }
+
+    public synchronized int consume() throws InterruptedException {
+        while (queue.isEmpty()) {
+            wait();
+        }
+        int item = queue.poll();
+        System.out.println("Consumed: " + item);
+        notifyAll();
+        return item;
+    }
+}
+```
+
+---
+
+### Producer Thread
+
+```java
+class Producer implements Runnable {
+    private Buffer buffer;
+
+    Producer(Buffer buffer) {
+        this.buffer = buffer;
+    }
+
+    public void run() {
+        int i = 0;
+        try {
+            while (true) {
+                buffer.produce(i++);
+                Thread.sleep(1000);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}
+```
+
+---
+
+### Consumer Thread
+
+```java
+class Consumer implements Runnable {
+    private Buffer buffer;
+
+    Consumer(Buffer buffer) {
+        this.buffer = buffer;
+    }
+
+    public void run() {
+        try {
+            while (true) {
+                buffer.consume();
+                Thread.sleep(1500);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}
+```
+
+---
+
+### Main Class
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        Buffer buffer = new Buffer(3);
+
+        Thread producer = new Thread(new Producer(buffer));
+        Thread consumer = new Thread(new Consumer(buffer));
+
+        producer.start();
+        consumer.start();
+    }
+}
+```
+
+---
+
+### Execution Summary
+
+* Producer waits when buffer is full
+* Consumer waits when buffer is empty
+* `wait()` releases lock
+* `notifyAll()` wakes waiting threads
+* Uses **while**, not `if`, to avoid spurious wakeups
+
+---
+
+## 2. WHY `stop()`, `suspend()`, `resume()` ARE DEPRECATED
+
+### Problem with `stop()`
+
+* Terminates thread **abruptly**
+* Does NOT release monitor locks
+* Can corrupt shared data
+* Causes **deadlocks**
+
+### Problem with `suspend()`
+
+* Suspends thread **without releasing lock**
+* Other threads wait forever
+
+### `resume()` Problem
+
+* Depends on `suspend()`
+* Can resume thread holding locks → deadlock
+
+---
+
+### DEADLOCK DEMO CODE (DO NOT USE IN REAL LIFE)
+
+```java
+class Resource {
+    synchronized void work() {
+        System.out.println(Thread.currentThread().getName() + " acquired lock");
+        try {
+            Thread.sleep(8000);
+        } catch (InterruptedException e) {}
+        System.out.println(Thread.currentThread().getName() + " released lock");
+    }
+}
+
+public class SuspendDemo {
+    public static void main(String[] args) throws Exception {
+        Resource r = new Resource();
+
+        Thread t1 = new Thread(() -> r.work(), "Thread-1");
+        Thread t2 = new Thread(() -> r.work(), "Thread-2");
+
+        t1.start();
+        Thread.sleep(1000);
+        t2.start();
+
+        Thread.sleep(3000);
+        t1.suspend(); // DEADLOCK
+    }
+}
+```
+
+---
+
+### Correct Alternative
+
+* Use `volatile boolean flag`
+* Use `interrupt()`
+
+---
+
+## 3. THREAD JOIN
+
+### What is `join()`?
+
+* Makes **current thread wait** for another thread to finish
+
+### Example
+
+```java
+class Worker extends Thread {
+    public void run() {
+        try {
+            Thread.sleep(3000);
+            System.out.println("Worker finished");
+        } catch (InterruptedException e) {}
+    }
+}
+
+public class JoinDemo {
+    public static void main(String[] args) throws InterruptedException {
+        Worker w = new Worker();
+        w.start();
+
+        System.out.println("Main waiting");
+        w.join();
+        System.out.println("Main resumes after worker");
+    }
+}
+```
+
+### Output
+
+```
+Main waiting
+Worker finished
+Main resumes after worker
+```
+
+---
+
+## 4. THREAD PRIORITY
+
+### Priority Range
+
+* `1` → MIN_PRIORITY
+* `5` → NORM_PRIORITY (default)
+* `10` → MAX_PRIORITY
+
+### Example
+
+```java
+Thread t = new Thread(() -> System.out.println("Running"));
+t.setPriority(Thread.MAX_PRIORITY);
+t.start();
+```
+
+### Important Truth
+
+* Priority is only a **hint**
+* JVM does NOT guarantee execution order
+* Never rely on priority in production
+
+---
+
+## 5. DAEMON THREADS
+
+### What is a Daemon Thread?
+
+* Background service thread
+* Dies automatically when **all user threads finish**
+
+### Examples
+
+* Garbage Collector
+* Auto-save
+* Logging
+
+---
+
+### Daemon Thread Example
+
+```java
+class DaemonTask extends Thread {
+    public void run() {
+        while (true) {
+            System.out.println("Daemon running");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {}
+        }
+    }
+}
+
+public class DaemonDemo {
+    public static void main(String[] args) {
+        DaemonTask d = new DaemonTask();
+        d.setDaemon(true);
+        d.start();
+
+        System.out.println("Main thread finished");
+    }
+}
+```
+
+### Output
+
+```
+Daemon running
+Main thread finished
+(program exits immediately)
+```
+
+---
+
+## FINAL INTERVIEW SUMMARY
+
+* Producer–Consumer uses `wait/notifyAll`
+* `stop/suspend/resume` are deprecated due to deadlocks
+* `join()` coordinates thread completion
+* Thread priority is unreliable
+* Daemon threads die with JVM
+
+---
+
+## INDUSTRY NOTE
+
+Use **BlockingQueue** instead of manual wait/notify:
+
+```java
+BlockingQueue<Integer> q = new ArrayBlockingQueue<>(5);
+q.put(item);
+q.take();
+```
+
+---
+
+✅ You have now completed **Core Java Multithreading**
+Interview-Level Final Answer 🏆
+
+No, suspend() and resume() are not equivalent to wait() and notify().
+suspend() pauses a thread without releasing locks, which can cause deadlocks,
+whereas wait() releases the monitor lock and allows safe inter-thread coordination.
+ That is why suspend() and resume() are deprecated, but wait() and notify() are the correct alternatives.
